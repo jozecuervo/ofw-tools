@@ -3,6 +3,13 @@ const path = require('path');
 const pdf = require('pdf-parse');
 const moment = require('moment');  // Import moment.js library
 
+const INPUT_FILE_PATH = process.argv[2];
+
+if (!INPUT_FILE_PATH) {
+    console.error('No input file path provided');
+    process.exit(1);
+}
+
 /**
  * Helper function to parse date strings from the PDF into Date objects.
  * @param {string} dateStr - The date string from the PDF.
@@ -11,6 +18,17 @@ const moment = require('moment');  // Import moment.js library
 function parseDate(dateStr) {
     const formattedDateStr = dateStr.replace(' at ', ' ').replace(/(AM|PM)/, ' $1');
     return new Date(moment(formattedDateStr, 'MM/DD/YYYY hh:mm A').toDate());
+}
+
+/**
+ * Writes data to a file and logs a confirmation message.
+ * @param {string} directory - The directory where the file should be saved.
+ * @param {string} fileName - The name of the file.
+ * @param {string} data - The data to write to the file.
+ */
+function writeFile(filePath, data) {
+    fs.writeFileSync(filePath, data);
+    console.log(`Data written to ${filePath}`);
 }
 
 /**
@@ -24,10 +42,58 @@ function getWeekString(date) {
     return `${startOfWeek.format('MMM DD')} - ${endOfWeek.format('MMM DD, YYYY')}`;
 }
 
+/**
+ * Parses the PDF file at the specified file path.
+ * @param {string} filePath - The path to the PDF file.
+ * @return {Promise<string>} - A promise that resolves to the text content of the PDF file.
+ */
 async function parsePdf(filePath) {
     const dataBuffer = fs.readFileSync(filePath);
     const data = await pdf(dataBuffer);
     return data.text;
+}
+
+/**
+ * Inner function to parse individual messages and extract metadata.
+ * @param {string} messageBlock - The text block representing a single message.
+ * @return {Object} - An object containing message data and calculated read times.
+ */
+function parseMessage(messageBlock) {
+    const message = {};
+
+    // Extracting sender, subject, sent date, and message body using regex
+    const senderMatch = messageBlock.match(/From:(.+)\n/);
+    const subjectMatch = messageBlock.match(/Subject:(.+)\n/);
+    const sentMatch = messageBlock.match(/Sent:(.+)\n/);
+    const bodyMatch = messageBlock.match(/\n\n([\s\S]+?)\nSent:/);
+
+    message.sender = senderMatch ? senderMatch[1].trim() : null;
+    message.subject = subjectMatch ? subjectMatch[1].trim() : null;
+    message.sentDate = sentMatch ? parseDate(sentMatch[1].trim()) : null;
+    message.body = bodyMatch ? bodyMatch[1].trim() : null;
+
+    // Extracting recipient view times and calculating read times
+    message.recipientReadTimes = {};
+
+    // Identify the section of text containing recipients
+    const recipientSectionMatch = messageBlock.match(/To:(.+?)\nSubject:/s);
+
+    if (recipientSectionMatch) {
+        const recipientSection = recipientSectionMatch[1];
+        const recipientLines = recipientSection.split('\n');
+
+        recipientLines.forEach(line => {
+            const recipientMatch = line.match(/(.+?)\(First Viewed: (.+?)\)/);
+
+            if (recipientMatch) {
+                const recipient = recipientMatch[1].trim();
+                const firstViewed = recipientMatch[2].trim();
+                message.recipientReadTimes[recipient] = firstViewed !== 'Never' ? parseDate(firstViewed) : 'Never';
+            }
+        });
+    }
+
+    return message;
 }
 
 /**
@@ -47,36 +113,15 @@ function processMessages(text) {
     return messages;
 }
 
-/**
- * Inner function to parse individual messages and extract metadata.
- * @param {string} messageBlock - The text block representing a single message.
- * @return {Object} - An object containing message data and calculated read times.
- */
-function parseMessage(messageBlock) {
-    const message = {};
-
-    // Extracting sender, subject, and other metadata using regex
-    const senderMatch = messageBlock.match(/From:(.+)\n/);
-    const subjectMatch = messageBlock.match(/Subject:(.+)\n/);
-    const sentMatch = messageBlock.match(/Sent:(.+)\n/);
-
-    message.sender = senderMatch ? senderMatch[1].trim() : null;
-    message.subject = subjectMatch ? subjectMatch[1].trim() : null;
-    message.sentDate = sentMatch ? parseDate(sentMatch[1].trim()) : null;  // Use parseDate function
-
-    // Extracting recipient view times and calculating read times
-    message.recipientReadTimes = {};
-    const recipientMatches = messageBlock.matchAll(/To:(.+)\(First Viewed: (.+?)\)\n/g);
-
-    for (const match of recipientMatches) {
-        const recipient = match[1].trim();
-        const firstViewed = match[2].trim();  // Store firstViewed as a string
-        message.recipientReadTimes[recipient] = firstViewed !== 'Never' ? parseDate(firstViewed) : 'Never';
-    }
-
-    return message;
+async function parsePdfFile(inputFilePath) {
+    const pdfText = await parsePdf(inputFilePath);
+    const messages = processMessages(pdfText);
+    const jsonData = JSON.stringify(messages, null, 2);
+    const directory = path.dirname(inputFilePath);
+    const fileNameWithoutExt = path.basename(inputFilePath, path.extname(inputFilePath));
+    writeFile(path.join(directory, `${fileNameWithoutExt}.json`), jsonData);  // Save data to JSON file
+    return { messages, directory, fileNameWithoutExt };  // Return data and directory for further processing
 }
-
 
 function outputMarkdown(stats) {
     console.log('Message Statistics:');
@@ -90,21 +135,22 @@ function outputMarkdown(stats) {
     }
 }
 
-function outputCSV(stats, csvFilePath) {
+function outputCSV(stats, filePath) {
     let csvOutput = 'Week,Name,Messages Sent,Messages Read,Average Read Time (minutes)\n';
     for (const [week, weekStats] of Object.entries(stats)) {
         for (const [person, personStats] of Object.entries(weekStats)) {
             csvOutput += `"${week}",${person},${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)}\n`;
         }
     }
-    fs.writeFileSync(csvFilePath, csvOutput);
+    writeFile(filePath, csvOutput);
 }
+
 
 /**
  * Compiles and outputs message statistics based on the array of messages.
  * @param {Array} messages - The array of message objects.
  */
-function compileAndOutputStats(messages, filePath) {
+function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
     const stats = {};
 
     messages.forEach(message => {
@@ -145,17 +191,16 @@ function compileAndOutputStats(messages, filePath) {
         }
     }
     // Output the statistics to Markdown (console) and CSV (file)
-    const csvFileName = path.basename(filePath, path.extname(filePath)) + '.csv';
-    const csvFilePath = path.join(path.dirname(filePath), csvFileName);
+
     outputMarkdown(stats);
-    outputCSV(stats, csvFilePath);
+    const csvFilePath = path.join(directory, `${fileNameWithoutExt}.csv`);
+    outputCSV(stats, csvFilePath);  // Pass the filePath to outputCSV
+
 }
 
-const FILEPATH = '';
-let messages = [];
-
-parsePdf(FILEPATH).then(pdfText => {
-    messages = processMessages(pdfText);
-    console.log(messages);
-    messages && compileAndOutputStats(messages, FILEPATH);
-});
+// Entry Point
+parsePdfFile(INPUT_FILE_PATH)
+    .then(compileAndOutputStats)  // Pass both messages and directory to compileAndOutputStats
+    .catch(error => {
+        console.error('Error:', error);
+    });
