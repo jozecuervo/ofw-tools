@@ -1,3 +1,4 @@
+// https://chat.openai.com/c/b8db648d-c288-4fc8-9d6f-aa6e240fbe4e
 const fs = require('fs');
 const path = require('path');
 const pdf = require('pdf-parse');
@@ -21,9 +22,10 @@ function parseDate(dateStr) {
 }
 
 /**
- * Writes data to a file and logs a confirmation message.
- * @param {string} directory - The directory where the file should be saved.
- * @param {string} fileName - The name of the file.
+ * Writes the provided data to a file at the provided file path, and logs a
+ * confirmation message to the console.
+ *
+ * @param {string} filePath - The path to the output file.
  * @param {string} data - The data to write to the file.
  */
 function writeFile(filePath, data) {
@@ -113,16 +115,31 @@ function processMessages(text) {
     return messages;
 }
 
+/**
+ * Parses the provided PDF file, processes the messages contained within it,
+ * saves the processed data to a JSON file, and returns the processed messages
+ * along with the directory and base file name for further processing.
+ *
+ * @param {string} inputFilePath - The path to the input PDF file.
+ * @returns {Promise<Object>} - A promise that resolves to an object containing
+ * the processed messages, the directory of the input file, and the base file name
+ * without extension.
+ */
 async function parsePdfFile(inputFilePath) {
     const pdfText = await parsePdf(inputFilePath);
     const messages = processMessages(pdfText);
     const jsonData = JSON.stringify(messages, null, 2);
     const directory = path.dirname(inputFilePath);
     const fileNameWithoutExt = path.basename(inputFilePath, path.extname(inputFilePath));
-    writeFile(path.join(directory, `${fileNameWithoutExt}.json`), jsonData);  // Save data to JSON file
-    return { messages, directory, fileNameWithoutExt };  // Return data and directory for further processing
+    writeFile(path.join(directory, `${fileNameWithoutExt}.json`), jsonData);
+    return { messages, directory, fileNameWithoutExt };
 }
 
+/**
+ * Outputs the provided message statistics to the console in Markdown table format.
+ *
+ * @param {Object} stats - The message statistics object.
+ */
 function outputMarkdown(stats) {
     console.log('Message Statistics:');
     for (const [week, weekStats] of Object.entries(stats)) {
@@ -135,6 +152,13 @@ function outputMarkdown(stats) {
     }
 }
 
+/**
+ * Generates a CSV string from the provided message statistics object,
+ * and writes this string to a CSV file at the provided file path.
+ *
+ * @param {Object} stats - The message statistics object.
+ * @param {string} filePath - The path to the output CSV file.
+ */
 function outputCSV(stats, filePath) {
     let csvOutput = 'Week,Name,Messages Sent,Messages Read,Average Read Time (minutes)\n';
     for (const [week, weekStats] of Object.entries(stats)) {
