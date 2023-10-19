@@ -29,8 +29,12 @@ function parseDate(dateStr) {
  * @param {string} data - The data to write to the file.
  */
 function writeFile(filePath, data) {
-    fs.writeFileSync(filePath, data);
-    console.log(`Data written to ${filePath}`);
+    try {
+        fs.writeFileSync(filePath, data);
+        console.log(`Data written to ${filePath}`);
+    } catch (error) {
+        console.error(`Failed to write to ${filePath}:`, error);
+    }
 }
 
 /**
@@ -50,9 +54,14 @@ function getWeekString(date) {
  * @return {Promise<string>} - A promise that resolves to the text content of the PDF file.
  */
 async function parsePdf(filePath) {
-    const dataBuffer = fs.readFileSync(filePath);
-    const data = await pdf(dataBuffer);
-    return data.text;
+    try {
+        const dataBuffer = fs.readFileSync(filePath);
+        const data = await pdf(dataBuffer);
+        return data.text;
+    } catch (error) {
+        console.error(`Failed to parse PDF at ${filePath}:`, error);
+        throw error;  // Re-throw the error to be caught by the calling function
+    }
 }
 
 /**
@@ -126,13 +135,19 @@ function processMessages(text) {
  * without extension.
  */
 async function parsePdfFile(inputFilePath) {
-    const pdfText = await parsePdf(inputFilePath);
-    const messages = processMessages(pdfText);
-    const jsonData = JSON.stringify(messages, null, 2);
-    const directory = path.dirname(inputFilePath);
-    const fileNameWithoutExt = path.basename(inputFilePath, path.extname(inputFilePath));
-    writeFile(path.join(directory, `${fileNameWithoutExt}.json`), jsonData);
-    return { messages, directory, fileNameWithoutExt };
+    try {
+        const pdfText = await parsePdf(inputFilePath);
+        const messages = processMessages(pdfText);
+        const jsonData = JSON.stringify(messages, null, 2);
+        const directory = path.dirname(inputFilePath);
+        const fileNameWithoutExt = path.basename(inputFilePath, path.extname(inputFilePath));
+        writeFile(path.join(directory, `${fileNameWithoutExt}.json`), jsonData);
+        return { messages, directory, fileNameWithoutExt };
+    } catch (error) {
+        console.error(`Failed to process PDF at ${inputFilePath}:`, error);
+        throw error;  // Re-throw the error to be caught by the calling function
+    }
+    
 }
 
 /**
