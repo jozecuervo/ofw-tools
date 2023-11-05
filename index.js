@@ -158,10 +158,9 @@ async function parsePdfFile(inputFilePath) {
  */
 function outputMarkdown(stats) {
     // Set up the table header
-    const header =    '| Week                  | Name             | Messages Sent | Messages Read | Average Read Time (mins) |';
-    const separator = '|-----------------------|------------------|---------------|---------------|--------------------------|';
+    const header =    '| Week                  | Name             | Sent | Read | Read Time |';
+    const separator = '|-----------------------|------------------|------|------|-----------|';
     console.log(header);
-    console.log(separator);
 
     // Iterate through each week and each person to build table rows
     let previousWeek = null;
@@ -171,9 +170,9 @@ function outputMarkdown(stats) {
             // Pad values to align columns
             const paddedWeek = (previousWeek !== week ? week : '').padEnd(21);
             const paddedName = person.padEnd(16);
-            const paddedSent = personStats.messagesSent.toString().padStart(14);
-            const paddedRead = personStats.messagesRead.toString().padStart(14);
-            const paddedTime = personStats.averageReadTime.toFixed(2).toString().padStart(25);
+            const paddedSent = personStats.messagesSent.toString().padStart(5);
+            const paddedRead = personStats.messagesRead.toString().padStart(5);
+            const paddedTime = parseInt(personStats.averageReadTime, 10).toString().padStart(10);
             
             // Construct and log the table row
             const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${paddedRead} |${paddedTime} |`;
