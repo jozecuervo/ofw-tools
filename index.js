@@ -6,13 +6,6 @@ const {
     parsePdf
 } = require('./utils');
 
-const INPUT_FILE_PATH = process.argv[2];
-
-if (!INPUT_FILE_PATH) {
-    console.error('No input file path provided');
-    process.exit(1);
-}
-
 /**
  * Inner function to parse individual messages and extract metadata.
  * @param {string} messageBlock - The text block representing a single message.
@@ -76,9 +69,7 @@ function processMessages(text) {
 }
 
 /**
- * Parses the provided PDF file, processes the messages contained within it,
- * saves the processed data to a JSON file, and returns the processed messages
- * along with the directory and base file name for further processing.
+ * Parses the provided PDF file and processes the messages contained within it.
  *
  * @param {string} inputFilePath - The path to the input PDF file.
  * @returns {Promise<Object>} - A promise that resolves to an object containing
@@ -89,15 +80,34 @@ async function parsePdfFile(inputFilePath) {
     try {
         const pdfText = await parsePdf(inputFilePath);
         const messages = processMessages(pdfText);
-        const jsonData = JSON.stringify(messages, null, 2);
         const directory = path.dirname(inputFilePath);
         const fileNameWithoutExt = path.basename(inputFilePath, path.extname(inputFilePath));
-        writeFile(path.join(directory, `${fileNameWithoutExt}.json`), jsonData);
         return { messages, directory, fileNameWithoutExt };
     } catch (error) {
         console.error(`Failed to process PDF at ${inputFilePath}:`, error);
-        throw error;  // Re-throw the error to be caught by the calling function
+        throw error;
     }
+}
+
+/**
+ * Writes the provided messages data to a JSON file in the specified directory, using the base file name.
+ *
+ * @param {Object} data - The data object containing messages, directory, and base file name.
+ * @returns {Promise<Object>} - A promise that resolves to the data object for further processing.
+ */
+function writeJsonFile(data) {
+    return new Promise((resolve, reject) => {
+        try {
+            const { messages, directory, fileNameWithoutExt } = data;
+            const jsonData = JSON.stringify(messages, null, 2);
+            const jsonFilePath = path.join(directory, `${fileNameWithoutExt}.json`);
+            writeFile(jsonFilePath, jsonData);
+            console.log(`Data written to ${jsonFilePath}`);
+            resolve(data);  // Pass the data object along for further processing
+        } catch (error) {
+            reject(`Failed to write JSON file: ${error}`);
+        }
+    });
 }
 
 /**
@@ -151,7 +161,6 @@ function outputCSV(stats, filePath) {
     writeFile(filePath, csvOutput);
 }
 
-
 /**
  * Compiles and outputs message statistics based on the array of messages.
  * @param {Array} messages - The array of message objects.
@@ -204,9 +213,16 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
 
 }
 
+const INPUT_FILE_PATH = process.argv[2];
+if (!INPUT_FILE_PATH) {
+    console.error('No input file path provided');
+    process.exit(1);
+}
+
 // Entry Point
 parsePdfFile(INPUT_FILE_PATH)
-    .then(compileAndOutputStats)  // Pass both messages and directory to compileAndOutputStats
+    .then(writeJsonFile)
+    .then(compileAndOutputStats)
     .catch(error => {
         console.error('Error:', error);
     });
