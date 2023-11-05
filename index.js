@@ -149,24 +149,41 @@ async function parsePdfFile(inputFilePath) {
         console.error(`Failed to process PDF at ${inputFilePath}:`, error);
         throw error;  // Re-throw the error to be caught by the calling function
     }
-    
 }
 
 /**
- * Outputs the provided message statistics to the console in Markdown table format.
+ * Outputs the provided message statistics to the console in a single Markdown table.
  *
  * @param {Object} stats - The message statistics object.
  */
 function outputMarkdown(stats) {
-    console.log('Message Statistics:');
+    // Set up the table header
+    const header =    '| Week                  | Name             | Messages Sent | Messages Read | Average Read Time (mins) |';
+    const separator = '|-----------------------|------------------|---------------|---------------|--------------------------|';
+    console.log(header);
+    console.log(separator);
+
+    // Iterate through each week and each person to build table rows
+    let previousWeek = null;
     for (const [week, weekStats] of Object.entries(stats)) {
-        console.log(`\nWeek of ${week}:\n`);
-        console.log('| Name | Messages Sent | Messages Read | Average Read Time (minutes) |');
-        console.log('|------|---------------|---------------|----------------------------|');
+        console.log(separator);
         for (const [person, personStats] of Object.entries(weekStats)) {
-            console.log(`| ${person} | ${personStats.messagesSent} | ${personStats.messagesRead} | ${personStats.averageReadTime.toFixed(2)} |`);
+            // Pad values to align columns
+            const paddedWeek = (previousWeek !== week ? week : '').padEnd(21);
+            const paddedName = person.padEnd(16);
+            const paddedSent = personStats.messagesSent.toString().padStart(14);
+            const paddedRead = personStats.messagesRead.toString().padStart(14);
+            const paddedTime = personStats.averageReadTime.toFixed(2).toString().padStart(25);
+            
+            // Construct and log the table row
+            const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${paddedRead} |${paddedTime} |`;
+            console.log(row);
+
+            // Update previousWeek for the next iteration
+            previousWeek = week;
         }
     }
+    console.log(separator);
 }
 
 /**
