@@ -76,8 +76,10 @@ function parseMessage(messageBlock) {
     const senderMatch = messageBlock.match(/From:(.+)\n/);
     const subjectMatch = messageBlock.match(/Subject:(.+)\n/);
     const sentMatch = messageBlock.match(/Sent:(.+)\n/);
-    const bodyMatch = messageBlock.match(/\n\n([\s\S]+?)\nSent:/);
-
+    const bodyMatch = messageBlock.match(/(.*)(?:\nSent:)/s);
+    if (!bodyMatch) {
+        console.log('Failed to match message body:', messageBlock);
+    }
     message.sender = senderMatch ? senderMatch[1].trim() : null;
     message.subject = subjectMatch ? subjectMatch[1].trim() : null;
     message.sentDate = sentMatch ? parseDate(sentMatch[1].trim()) : null;
