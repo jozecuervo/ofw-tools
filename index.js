@@ -157,10 +157,11 @@ function outputMarkdown(stats) {
  * @param {string} filePath - The path to the output CSV file.
  */
 function outputCSV(stats, filePath) {
-    let csvOutput = 'Week,Name,Messages Sent,Messages Read,Average Read Time (minutes)\n';
+    let csvOutput = 'Week,Name,Messages Sent,Messages Read,Average Read Time (minutes),Total Words\n';
     for (const [week, weekStats] of Object.entries(stats)) {
         for (const [person, personStats] of Object.entries(weekStats)) {
-            csvOutput += `"${week}",${person},${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)}\n`;
+            const wordCount = (personStats.totalWords !== undefined) ? personStats.totalWords : '';
+            csvOutput += `"${week}","${person}",${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)},${wordCount}\n`;
         }
     }
     writeFile(filePath, csvOutput);
