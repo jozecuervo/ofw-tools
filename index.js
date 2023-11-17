@@ -120,8 +120,8 @@ function writeJsonFile(data) {
  */
 function outputMarkdown(stats) {
     // Set up the table header
-    const header =    '| Week                  | Name             | Sent | Read | Read Time |';
-    const separator = '|-----------------------|------------------|------|------|-----------|';
+    const header = '| Week                  | Name             | Sent | Read | Read Time | Words |';
+    const separator = '|-----------------------|------------------|------|------|-----------|-------|';
     console.log(header);
 
     // Iterate through each week and each person to build table rows
@@ -135,9 +135,11 @@ function outputMarkdown(stats) {
             const paddedSent = personStats.messagesSent.toString().padStart(5);
             const paddedRead = personStats.messagesRead.toString().padStart(5);
             const paddedTime = parseInt(personStats.averageReadTime, 10).toString().padStart(10);
-            
+            // Display word count only for senders
+            const wordCountDisplay = (personStats.totalWords !== undefined) ? personStats.totalWords.toString().padStart(6) : ' '.padStart(6);
+
             // Construct and log the table row
-            const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${paddedRead} |${paddedTime} |`;
+            const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${paddedRead} |${paddedTime} |${wordCountDisplay} |`;
             console.log(row);
 
             // Update previousWeek for the next iteration
@@ -177,23 +179,22 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
             stats[weekString] = {};
         }
 
-        // Increment sent message count for sender
+        // Increment sent message count and accumulate word count for sender
         const sender = message.sender;
         if (!stats[weekString][sender]) {
-            stats[weekString][sender] = { messagesSent: 0, messagesRead: 0, totalReadTime: 0 };
+            stats[weekString][sender] = { messagesSent: 0, messagesRead: 0, totalReadTime: 0, totalWords: 0 };
         }
         stats[weekString][sender].messagesSent++;
+        stats[weekString][sender].totalWords += message.wordCount;
 
         // Increment read message count and total read time for each recipient
         for (const [recipient, firstViewed] of Object.entries(message.recipientReadTimes)) {
             if (firstViewed !== 'Never') {
-
                 const firstViewedDate = new Date(firstViewed);
                 const readTime = (firstViewedDate - message.sentDate) / 60000;
-                // console.log(`sentDate: ${message.sentDate}, firstViewedDate: ${firstViewedDate} readTime: ${readTime}`);  // Debugging line
 
                 if (!stats[weekString][recipient]) {
-                    stats[weekString][recipient] = { messagesSent: 0, messagesRead: 0, totalReadTime: 0 };
+                    stats[weekString][recipient] = { messagesSent: 0, messagesRead: 0, totalReadTime: 0, totalWords: 0  };
                 }
                 stats[weekString][recipient].messagesRead++;
                 stats[weekString][recipient].totalReadTime += readTime;
