@@ -27,6 +27,9 @@ function parseMessage(messageBlock) {
     message.sentDate = sentMatch ? parseDate(sentMatch[1].trim()) : null;
     message.body = bodyMatch ? bodyMatch[1].trim() : null;
 
+    // Calculate word count
+    message.wordCount = message.body ? message.body.split(/\s+/).length : 0;
+
     // Extracting recipient view times and calculating read times
     message.recipientReadTimes = {};
 
