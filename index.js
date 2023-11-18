@@ -1,4 +1,11 @@
 const path = require('path');
+
+const Sentiment = require('sentiment');
+const sentiment = new Sentiment();
+
+const natural = require('natural');
+const analyzer = new natural.SentimentAnalyzer('English', natural.PorterStemmer, 'afinn');
+
 const {
     parseDate,
     getWeekString,
@@ -29,6 +36,23 @@ function parseMessage(messageBlock) {
 
     // Calculate word count
     message.wordCount = message.body ? message.body.split(/\s+/).length : 0;
+
+    // Perform sentiment analysis on the message body
+    if (message.body) {
+        const sentimentResult = analyzer.getSentiment(message.body.split(/\s+/));
+        message.sentiment_natural = sentimentResult;
+    } else {
+        message.sentiment_natural = 0;
+    }
+
+    // Perform sentiment analysis on the message body
+    if (message.body) {
+        const sentimentResult = sentiment.analyze(message.body);
+        message.sentiment = sentimentResult.score; // Add the sentiment score to the message object
+    } else {
+        message.sentiment = 0; // Default to 0 if there's no message body
+    }
+
 
     // Extracting recipient view times and calculating read times
     message.recipientReadTimes = {};
@@ -119,7 +143,7 @@ function writeJsonFile(data) {
  * @param {Object} stats - The message statistics object.
  */
 function outputMarkdown(stats) {
-    const header =    '| Week                  | Name             | Sent | Words | Read | View Time (hrs) | Avg View Time |';
+    const header = '| Week                  | Name             | Sent | Words | Read | View Time (hrs) | Avg View Time |';
     const separator = '|-----------------------|------------------|------|-------|------|-----------------|---------------|';
     console.log(header);
 

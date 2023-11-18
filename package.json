@@ -7,9 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC",
+  "license": "CC0-1.0",
   "dependencies": {
     "moment": "^2.29.4",
-    "pdf-parse": "^1.1.1"
+    "natural": "^6.8.0",
+    "pdf-parse": "^1.1.1",
+    "sentiment": "^5.0.2"
   }
 }
