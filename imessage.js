@@ -27,7 +27,7 @@ function analyzeSentiment(content) {
     return {
         sentimentScore: sentimentResult.score,
         naturalScore: naturalResult,
-        polarityScore: polarityResult,
+        polarityScore: polarityResult.polarity,
     };
 }
 
@@ -76,8 +76,8 @@ function parseIMessageFile(filePath) {
             // Perform sentiment analysis on each message
             messages = messages.map(message => ({
                 ...message,
-                sentiment: analyzeSentiment(message.content),
-                year: getYearFromTimestamp(message.timestamp)
+                year: getYearFromTimestamp(message.timestamp),
+                ...analyzeSentiment(message.content),
             }));
 
             // Group messages by year
