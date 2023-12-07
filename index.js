@@ -158,7 +158,7 @@ function outputMarkdown(stats) {
             const paddedTotalTime = (personStats.totalReadTime / 60).toFixed(1).toString().padStart(16);
             const paddedAvgTime = (personStats.averageReadTime / 60).toFixed(1).toString().padStart(14);
             const wordCountDisplay = personStats.messagesSent > 0 ? personStats.totalWords.toString().padStart(6) : ' '.padStart(6);
-            const paddedSentiment = personStats.avgSentiment.toFixed(1).toString().padStart(14);
+            const paddedSentiment = personStats.avgSentiment.toFixed(2).toString().padStart(14);
             const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedRead} |${paddedTotalTime} |${paddedAvgTime} | ${paddedSentiment} |`;
             console.log(row);
             previousWeek = week;
@@ -181,7 +181,7 @@ function outputCSV(stats, filePath) {
     for (const [week, weekStats] of Object.entries(stats)) {
         for (const [person, personStats] of Object.entries(weekStats)) {
             const wordCount = (personStats.totalWords !== undefined) ? personStats.totalWords : '';
-            csvOutput += `"${week}","${person}",${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)},${wordCount},${personStats.sentiment}\n`;
+            csvOutput += `"${week}","${person}",${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)},${wordCount},${personStats.avgSentiment.toFixed(2)}\n`;
         }
     }
     writeFile(filePath, csvOutput);
