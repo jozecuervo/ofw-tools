@@ -237,6 +237,8 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
 
     // Calculate average read time for each person in each week
     for (const week in stats) {
+        // Sort stats[week] by person's name
+        stats[week] = Object.fromEntries(Object.entries(stats[week]).sort());
         for (const person in stats[week]) {
             const personStats = stats[week][person];
             personStats.averageReadTime = personStats.messagesRead === 0 ? 0 : personStats.totalReadTime / personStats.messagesRead;
