@@ -143,8 +143,10 @@ function writeJsonFile(data) {
  * @param {Object} stats - The message statistics object.
  */
 function outputMarkdown(stats) {
-    const header = '| Week                  | Name             | Sent | Words | Read | View Time (hrs) | Avg View Time | Avg. Sentiment |\n';
-    const separator = '|-----------------------|------------------|------|-------|------|-----------------|---------------|----------------|';
+    const header = '| Week                  | Name             | Sent | Words | Read | View Time | Avg View Time | Avg. Sentiment |';
+    const separator = '|-----------------------|------------------|------|-------|------|-----------|---------------|----------------|';
+
+    console.log(separator);
     console.log(header);
 
     let previousWeek = null;
@@ -155,8 +157,8 @@ function outputMarkdown(stats) {
             const paddedName = person.padEnd(16);
             const paddedSent = personStats.messagesSent.toString().padStart(5);
             const paddedRead = personStats.messagesRead.toString().padStart(5);
-            const paddedTotalTime = (personStats.totalReadTime / 60).toFixed(1).toString().padStart(16);
-            const paddedAvgTime = (personStats.averageReadTime / 60).toFixed(1).toString().padStart(14);
+            const paddedTotalTime = (personStats.totalReadTime).toFixed(1).toString().padStart(10);
+            const paddedAvgTime = (personStats.averageReadTime).toFixed(1).toString().padStart(14);
             const wordCountDisplay = personStats.messagesSent > 0 ? personStats.totalWords.toString().padStart(6) : ' '.padStart(6);
             const paddedSentiment = personStats.avgSentiment.toFixed(2).toString().padStart(14);
             const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedRead} |${paddedTotalTime} |${paddedAvgTime} | ${paddedSentiment} |`;
@@ -202,7 +204,12 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
 
         const sender = message.sender;
         if (!stats[weekString][sender]) {
-            stats[weekString][sender] = { messagesSent: 0, messagesRead: 0, totalReadTime: 0, totalWords: 0 };
+            stats[weekString][sender] = {
+                messagesSent: 0,
+                messagesRead: 0,
+                totalReadTime: 0,
+                totalWords: 0
+            };
         }
         stats[weekString][sender].messagesSent++;
         stats[weekString][sender].totalWords += message.wordCount;
