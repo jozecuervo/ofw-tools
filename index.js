@@ -19,20 +19,37 @@ const {
  * @return {Object} - An object containing message data and calculated read times.
  */
 function parseMessage(messageBlock) {
-    const message = {};
-
-    // Extracting sender, subject, sent date, and message body using regex
-    const senderMatch = messageBlock.match(/From:(.+)\n/);
-    const subjectMatch = messageBlock.match(/Subject:(.+)\n/);
-    const sentMatch = messageBlock.match(/Sent:(.+)\n/);
-    const bodyMatch = messageBlock.match(/(.*)(?:\nSent:)/s);
-    if (!bodyMatch) {
-        console.log('Failed to match message body:', messageBlock);
+    // Split the message block on "Page X of Y" to isolate the first page
+    const pages = messageBlock.split(/Page \d+ of \d+/);
+    const firstPage = pages[0]; // The content before the first "Page X of Y"
+    // Extract the metadata block starting from the last occurrence of "Sent:"
+    const metadataIndex = firstPage.lastIndexOf("Sent:");
+    const metadataBlock = firstPage.substring(metadataIndex).trim();
+    let body = firstPage.substring(0, metadataIndex).trim(); // The body is everything before the metadata
+    if (pages.length > 1) {
+        const remainingPages = pages.slice(1).join(''); // Join the remaining pages back into a single string
+        // Clean up the body by trimming trailing newlines
+        body = body.concat(remainingPages).trim();
     }
-    message.sender = senderMatch ? senderMatch[1].trim() : null;
-    message.subject = subjectMatch ? subjectMatch[1].trim() : null;
-    message.sentDate = sentMatch ? parseDate(sentMatch[1].trim()) : null;
-    message.body = bodyMatch ? bodyMatch[1].trim() : null;
+    // console.log(body);
+
+    // Initialize message object with the body
+    const message = {
+        body: body.trim(),
+        wordCount: body.split(/\s+/).filter(Boolean).length // Count words in the body
+    };
+
+    // Process the metadata block for details
+    const metadataLines = metadataBlock.split('\n');
+    metadataLines.forEach(line => {
+        if (line.startsWith('Sent:')) {
+            message.sentDate = parseDate(line.substring(5).trim());
+        } else if (line.startsWith('From:')) {
+            message.sender = line.substring(5).trim();
+        } else if (line.startsWith('Subject:')) {
+            message.subject = line.substring(8).trim();
+        }
+    });
 
     // Calculate word count
     message.wordCount = message.body ? message.body.split(/\s+/).length : 0;

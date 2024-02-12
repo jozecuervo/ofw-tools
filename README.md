@@ -33,7 +33,7 @@ Before using this tool, you need to download your message records as a PDF file 
 
 1. Log in to your OFW account.
 2. Navigate to the appropriate section to access messages.
-3. Follow the OFW instructions to download your messages as a PDF file.
+3. Download your messages as a PDF file. Use full pages per message for the best results.
 
 ### Step 2: Run the Analysis Tool
 
