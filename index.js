@@ -154,7 +154,7 @@ function writeJsonFile(data) {
         }
     });
 }
-const messageTemplate = (message) => {
+const messageTemplate = (message, index, total) => {
     const {
         sentDate,
         sender,
@@ -167,13 +167,14 @@ const messageTemplate = (message) => {
     } = message;
     return `
 -----------------------------------------------------
-## Sent: ${formatDate(sentDate)}
-## From: ${sender}
-## To:
-${Object.entries(recipientReadTimes).map(([recipient, firstViewed]) => ` - ${recipient}: ${formatDate(firstViewed)}`).join('\n')}
-## Word Count: ${wordCount}, Sentiment: ${sentiment}, ${sentiment_natural}
-## Subject: ${subject}
-## Body:
+## Message ${index + 1} of ${total}
+- Sent: ${formatDate(sentDate)}
+- From: ${sender}
+- To:
+${Object.entries(recipientReadTimes).map(([recipient, firstViewed]) => `   - ${recipient}: ${formatDate(firstViewed)}`).join('\n')}
+- Word Count: ${wordCount}, Sentiment: ${sentiment}, ${sentiment_natural}
+- Subject: ${subject}
+
 ${body}
 `};
 
@@ -184,8 +185,8 @@ function writeMarkDownFile(data) {
         try {
             const { messages, directory, fileNameWithoutExt } = data;
             let markdownContent = '';
-            messages.forEach(message => {
-                const messageContent = messageTemplate(message);
+            messages.forEach((message, index) => {
+                const messageContent = messageTemplate(message, index, messages.length);
                 markdownContent += messageContent;
             });
             const markdownFilePath = path.join(directory, `${fileNameWithoutExt}.md`);
