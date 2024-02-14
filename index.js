@@ -8,6 +8,7 @@ const analyzer = new natural.SentimentAnalyzer('English', natural.PorterStemmer,
 
 const {
     parseDate,
+    formatDate,
     getWeekString,
     writeFile,
     parsePdf
@@ -19,20 +20,37 @@ const {
  * @return {Object} - An object containing message data and calculated read times.
  */
 function parseMessage(messageBlock) {
-    const message = {};
-
-    // Extracting sender, subject, sent date, and message body using regex
-    const senderMatch = messageBlock.match(/From:(.+)\n/);
-    const subjectMatch = messageBlock.match(/Subject:(.+)\n/);
-    const sentMatch = messageBlock.match(/Sent:(.+)\n/);
-    const bodyMatch = messageBlock.match(/(.*)(?:\nSent:)/s);
-    if (!bodyMatch) {
-        console.log('Failed to match message body:', messageBlock);
+    // Split the message block on "Page X of Y" to isolate the first page
+    const pages = messageBlock.split(/Page \d+ of \d+/);
+    const firstPage = pages[0]; // The content before the first "Page X of Y"
+    // Extract the metadata block starting from the last occurrence of "Sent:"
+    const metadataIndex = firstPage.lastIndexOf("Sent:");
+    const metadataBlock = firstPage.substring(metadataIndex).trim();
+    let body = firstPage.substring(0, metadataIndex).trim(); // The body is everything before the metadata
+    if (pages.length > 1) {
+        const remainingPages = pages.slice(1).join(''); // Join the remaining pages back into a single string
+        // Clean up the body by trimming trailing newlines
+        body = body.concat(remainingPages).trim();
     }
-    message.sender = senderMatch ? senderMatch[1].trim() : null;
-    message.subject = subjectMatch ? subjectMatch[1].trim() : null;
-    message.sentDate = sentMatch ? parseDate(sentMatch[1].trim()) : null;
-    message.body = bodyMatch ? bodyMatch[1].trim() : null;
+    // console.log(body);
+
+    // Initialize message object with the body
+    const message = {
+        body: body.trim(),
+        wordCount: body.split(/\s+/).filter(Boolean).length // Count words in the body
+    };
+
+    // Process the metadata block for details
+    const metadataLines = metadataBlock.split('\n');
+    metadataLines.forEach(line => {
+        if (line.startsWith('Sent:')) {
+            message.sentDate = parseDate(line.substring(5).trim());
+        } else if (line.startsWith('From:')) {
+            message.sender = line.substring(5).trim();
+        } else if (line.startsWith('Subject:')) {
+            message.subject = line.substring(8).trim();
+        }
+    });
 
     // Calculate word count
     message.wordCount = message.body ? message.body.split(/\s+/).length : 0;
@@ -136,13 +154,56 @@ function writeJsonFile(data) {
         }
     });
 }
+const messageTemplate = (message) => {
+    const {
+        sentDate,
+        sender,
+        recipientReadTimes,
+        wordCount,
+        sentiment,
+        sentiment_natural,
+        subject,
+        body,
+    } = message;
+    return `
+-----------------------------------------------------
+## Sent: ${formatDate(sentDate)}
+## From: ${sender}
+## To:
+${Object.entries(recipientReadTimes).map(([recipient, firstViewed]) => ` - ${recipient}: ${formatDate(firstViewed)}`).join('\n')}
+## Word Count: ${wordCount}, Sentiment: ${sentiment}, ${sentiment_natural}
+## Subject: ${subject}
+## Body:
+${body}
+`};
+
+
+function writeMarkDownFile(data) {
+    console.log('Writing markdown file');
+    return new Promise((resolve, reject) => {
+        try {
+            const { messages, directory, fileNameWithoutExt } = data;
+            let markdownContent = '';
+            messages.forEach(message => {
+                const messageContent = messageTemplate(message);
+                markdownContent += messageContent;
+            });
+            const markdownFilePath = path.join(directory, `${fileNameWithoutExt}.md`);
+            writeFile(markdownFilePath, markdownContent);
+            console.log(`Content written to ${markdownFilePath}`);
+            resolve(data);  // Pass the data object along for further processing
+        } catch (error) {
+            reject(`Failed to write Markdown file: ${error}`);
+        }
+    });
+}
 
 /**
  * Outputs the provided message statistics to the console in a single Markdown table.
  *
  * @param {Object} stats - The message statistics object.
  */
-function outputMarkdown(stats) {
+function outputMarkdownSummary(stats) {
     const header = '| Week                  | Name             | Sent | Words | Read | View Time | Avg View Time | Avg. Sentiment |';
     const separator = '|-----------------------|------------------|------|-------|------|-----------|---------------|----------------|';
 
@@ -255,7 +316,7 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
     }
     // Output the statistics to Markdown (console) and CSV (file)
 
-    outputMarkdown(stats);
+    outputMarkdownSummary(stats);
     const csvFilePath = path.join(directory, `${fileNameWithoutExt}.csv`);
     outputCSV(stats, csvFilePath);
 }
@@ -270,6 +331,7 @@ if (!INPUT_FILE_PATH) {
 // Entry Point
 parsePdfFile(INPUT_FILE_PATH)
     .then(writeJsonFile)
+    .then(writeMarkDownFile)
     .then(compileAndOutputStats)
     .catch(error => {
         console.error('Error:', error);
