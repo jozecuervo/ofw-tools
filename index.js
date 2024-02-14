@@ -8,6 +8,7 @@ const analyzer = new natural.SentimentAnalyzer('English', natural.PorterStemmer,
 
 const {
     parseDate,
+    formatDate,
     getWeekString,
     writeFile,
     parsePdf
@@ -153,13 +154,56 @@ function writeJsonFile(data) {
         }
     });
 }
+const messageTemplate = (message) => {
+    const {
+        sentDate,
+        sender,
+        recipientReadTimes,
+        wordCount,
+        sentiment,
+        sentiment_natural,
+        subject,
+        body,
+    } = message;
+    return `
+-----------------------------------------------------
+## Sent: ${formatDate(sentDate)}
+## From: ${sender}
+## To:
+${Object.entries(recipientReadTimes).map(([recipient, firstViewed]) => ` - ${recipient}: ${formatDate(firstViewed)}`).join('\n')}
+## Word Count: ${wordCount}, Sentiment: ${sentiment}, ${sentiment_natural}
+## Subject: ${subject}
+## Body:
+${body}
+`};
+
+
+function writeMarkDownFile(data) {
+    console.log('Writing markdown file');
+    return new Promise((resolve, reject) => {
+        try {
+            const { messages, directory, fileNameWithoutExt } = data;
+            let markdownContent = '';
+            messages.forEach(message => {
+                const messageContent = messageTemplate(message);
+                markdownContent += messageContent;
+            });
+            const markdownFilePath = path.join(directory, `${fileNameWithoutExt}.md`);
+            writeFile(markdownFilePath, markdownContent);
+            console.log(`Content written to ${markdownFilePath}`);
+            resolve(data);  // Pass the data object along for further processing
+        } catch (error) {
+            reject(`Failed to write Markdown file: ${error}`);
+        }
+    });
+}
 
 /**
  * Outputs the provided message statistics to the console in a single Markdown table.
  *
  * @param {Object} stats - The message statistics object.
  */
-function outputMarkdown(stats) {
+function outputMarkdownSummary(stats) {
     const header = '| Week                  | Name             | Sent | Words | Read | View Time | Avg View Time | Avg. Sentiment |';
     const separator = '|-----------------------|------------------|------|-------|------|-----------|---------------|----------------|';
 
@@ -272,7 +316,7 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
     }
     // Output the statistics to Markdown (console) and CSV (file)
 
-    outputMarkdown(stats);
+    outputMarkdownSummary(stats);
     const csvFilePath = path.join(directory, `${fileNameWithoutExt}.csv`);
     outputCSV(stats, csvFilePath);
 }
@@ -287,6 +331,7 @@ if (!INPUT_FILE_PATH) {
 // Entry Point
 parsePdfFile(INPUT_FILE_PATH)
     .then(writeJsonFile)
+    .then(writeMarkDownFile)
     .then(compileAndOutputStats)
     .catch(error => {
         console.error('Error:', error);

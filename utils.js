@@ -24,6 +24,19 @@ function parseDate(dateStr) {
 }
 
 /**
+ * Helper function to format date strings from the PDF into a more readable format.
+ * @param {string|object} dateStr - The parsed date object from the PDF, or a string ('Never')
+ */
+function formatDate(dateStr) {
+    console.log('dateStr', dateStr, typeof dateStr);
+    if (typeof dateStr === 'object') {
+        return dateStr.toString().replace(' GMT-0800 (Pacific Standard Time)', '');
+    }
+    return dateStr;
+}
+
+
+/**
  * Writes the provided data to a file at the provided file path, and logs a
  * confirmation message to the console.
 *
@@ -58,4 +71,5 @@ async function parsePdf(filePath) {
 exports.getWeekString = getWeekString;
 exports.parsePdf = parsePdf;
 exports.parseDate = parseDate;
+exports.formatDate = formatDate;
 exports.writeFile = writeFile;
