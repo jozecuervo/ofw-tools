@@ -28,7 +28,7 @@ function parseDate(dateStr) {
  * @param {string|object} dateStr - The parsed date object from the PDF, or a string ('Never')
  */
 function formatDate(dateStr) {
-    console.log('dateStr', dateStr, typeof dateStr);
+    // console.log('dateStr', dateStr, typeof dateStr);
     if (typeof dateStr === 'object') {
         return dateStr.toString().replace(' GMT-0800 (Pacific Standard Time)', '');
     }
@@ -46,7 +46,7 @@ function formatDate(dateStr) {
 function writeFile(filePath, data) {
     try {
         fs.writeFileSync(filePath, data);
-        console.log(`Data written to ${filePath}`);
+        // console.log(`File written to: ${filePath}`);
     } catch (error) {
         console.error(`Failed to write to ${filePath}:`, error);
     }
