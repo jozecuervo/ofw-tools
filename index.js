@@ -124,7 +124,9 @@ function processMessages(text) {
 async function parsePdfFile(inputFilePath) {
     try {
         const pdfText = await parsePdf(inputFilePath);
+        console.log('PDF text parsed');
         const messages = processMessages(pdfText);
+        console.log(`Processed ${messages.length} messages`);
         const directory = path.dirname(inputFilePath);
         const fileNameWithoutExt = path.basename(inputFilePath, path.extname(inputFilePath));
         return { messages, directory, fileNameWithoutExt };
@@ -146,8 +148,8 @@ function writeJsonFile(data) {
             const { messages, directory, fileNameWithoutExt } = data;
             const jsonData = JSON.stringify(messages, null, 2);
             const jsonFilePath = path.join(directory, `${fileNameWithoutExt}.json`);
+            console.log(`Writing JSON to ${jsonFilePath}`);
             writeFile(jsonFilePath, jsonData);
-            console.log(`Data written to ${jsonFilePath}`);
             resolve(data);  // Pass the data object along for further processing
         } catch (error) {
             reject(`Failed to write JSON file: ${error}`);
@@ -180,7 +182,6 @@ ${body}
 
 
 function writeMarkDownFile(data) {
-    console.log('Writing markdown file');
     return new Promise((resolve, reject) => {
         try {
             const { messages, directory, fileNameWithoutExt } = data;
@@ -190,8 +191,8 @@ function writeMarkDownFile(data) {
                 markdownContent += messageContent;
             });
             const markdownFilePath = path.join(directory, `${fileNameWithoutExt}.md`);
+            console.log(`Writing all messages to ${markdownFilePath}`);
             writeFile(markdownFilePath, markdownContent);
-            console.log(`Content written to ${markdownFilePath}`);
             resolve(data);  // Pass the data object along for further processing
         } catch (error) {
             reject(`Failed to write Markdown file: ${error}`);
@@ -204,9 +205,31 @@ function writeMarkDownFile(data) {
  *
  * @param {Object} stats - The message statistics object.
  */
-function outputMarkdownSummary(stats) {
-    const header = '| Week                  | Name             | Sent | Words | Read | View Time | Avg View Time | Avg. Sentiment |';
-    const separator = '|-----------------------|------------------|------|-------|------|-----------|---------------|----------------|';
+function outputMarkdownSummary(totals, stats) {
+    console.log('\n');
+    // Output the totals to Markdown
+    let header = '| Name             | Sent | Words | View Time | Avg View Time | Avg. Sentiment | Sentiment ntrl |';
+    // Output the statistics to Markdown
+    console.log(header);
+    let separator = '|------------------|------|-------|-----------|---------------|----------------|----------------|';
+    console.log(separator);
+    for (const [person, personTotals] of Object.entries(totals)) {
+        if (person.includes('Marie') || person.includes('Nora') || person.includes('Henry')) {
+            continue;
+        } 
+        const paddedName = person.padEnd(16);
+        const paddedSent = personTotals.messagesSent.toString().padStart(5);
+        const paddedTotalTime = (personTotals.totalReadTime).toFixed(1).toString().padStart(10);
+        const paddedAvgTime = (personTotals.averageReadTime).toFixed(1).toString().padStart(14);
+        const wordCountDisplay = personTotals.messagesSent > 0 ? personTotals.totalWords.toString().padStart(6) : ' '.padStart(6);
+        const paddedSentiment = personTotals.avgSentiment.toFixed(2).toString().padStart(14);
+        const paddedSentiment_natural = personTotals.sentiment_natural.toFixed(2).toString().padStart(14);
+        const row = `| ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedTotalTime} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} |`;
+        console.log(row);
+    }
+    console.log('\n')
+    header = '| Week                  | Name             | Sent | Words | View Time | Avg View Time | Avg. Sentiment | Sentiment ntrl |';
+    separator = '|-----------------------|------------------|------|-------|-----------|---------------|----------------|----------------|';
 
     console.log(separator);
     console.log(header);
@@ -218,12 +241,12 @@ function outputMarkdownSummary(stats) {
             const paddedWeek = (previousWeek !== week ? week : '').padEnd(21);
             const paddedName = person.padEnd(16);
             const paddedSent = personStats.messagesSent.toString().padStart(5);
-            const paddedRead = personStats.messagesRead.toString().padStart(5);
             const paddedTotalTime = (personStats.totalReadTime).toFixed(1).toString().padStart(10);
             const paddedAvgTime = (personStats.averageReadTime).toFixed(1).toString().padStart(14);
             const wordCountDisplay = personStats.messagesSent > 0 ? personStats.totalWords.toString().padStart(6) : ' '.padStart(6);
             const paddedSentiment = personStats.avgSentiment.toFixed(2).toString().padStart(14);
-            const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedRead} |${paddedTotalTime} |${paddedAvgTime} | ${paddedSentiment} |`;
+            const paddedSentiment_natural = personStats.sentiment_natural.toFixed(2).toString().padStart(14);
+            const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedTotalTime} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} |`;
             console.log(row);
             previousWeek = week;
         }
@@ -248,6 +271,7 @@ function outputCSV(stats, filePath) {
             csvOutput += `"${week}","${person}",${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)},${wordCount},${personStats.avgSentiment.toFixed(2)}\n`;
         }
     }
+    console.log(`Writing CSV to ${filePath}`);
     writeFile(filePath, csvOutput);
 }
 
@@ -256,31 +280,61 @@ function outputCSV(stats, filePath) {
  * @param {Array} messages - The array of message objects.
  */
 function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
+    /**
+     * The message statistics object.
+     * example:
+     * {
+     *  '2021-01-01': {
+     *     'Alice': {
+     *      messagesSent: 3,
+     *      messagesRead: 2,
+     *      totalReadTime: 10,
+     *      totalWords: 100
+     *     },
+     *     'Bob': {
+     *       ...
+     *     }
+     */
     const stats = {};
+    const totals = {};
 
     messages.forEach(message => {
         const weekString = getWeekString(message.sentDate);
+        const sender = message.sender;
+        if (!totals[sender]) {
+            totals[sender] = {
+                messagesSent: 0,
+                messagesRead: 0,
+                totalReadTime: 0,
+                totalWords: 0,
+                sentiment: 0,
+                sentiment_natural: 0,
+                averageReadTime: 0,
+            };
+        }
         if (!stats[weekString]) {
             stats[weekString] = {};
         }
-
-        const sender = message.sender;
         if (!stats[weekString][sender]) {
             stats[weekString][sender] = {
                 messagesSent: 0,
                 messagesRead: 0,
                 totalReadTime: 0,
-                totalWords: 0
+                totalWords: 0,
+                sentiment: 0,
+                sentiment_natural: 0,
+                averageReadTime: 0,
             };
         }
+        totals[sender].messagesSent++;
+        totals[sender].totalWords += message.wordCount;
+        totals[sender].sentiment += message.sentiment;
+        totals[sender].sentiment_natural += message.sentiment_natural;
+
         stats[weekString][sender].messagesSent++;
         stats[weekString][sender].totalWords += message.wordCount;
-
-        const sentiment = message.sentiment;
-        if (!stats[weekString][sender].sentiment) {
-            stats[weekString][sender].sentiment = 0;
-        }
-        stats[weekString][sender].sentiment += sentiment;
+        stats[weekString][sender].sentiment += message.sentiment;
+        stats[weekString][sender].sentiment_natural += message.sentiment_natural;
 
         // Increment read message count and total read time for each recipient
         for (const [recipient, firstViewed] of Object.entries(message.recipientReadTimes)) {
@@ -288,38 +342,55 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
                 const firstViewedDate = new Date(firstViewed);
                 const readTime = (firstViewedDate - message.sentDate) / 60000;
                 
-
+                if (!totals[recipient]) {
+                    totals[recipient] = {
+                        messagesSent: 0,
+                        messagesRead: 0,
+                        totalReadTime: 0,
+                        totalWords: 0,
+                        sentiment: 0,
+                        sentiment_natural: 0,
+                    };
+                }
                 if (!stats[weekString][recipient]) {
                     stats[weekString][recipient] = {
                         messagesSent: 0,
                         messagesRead: 0,
                         totalReadTime: 0,
                         totalWords: 0,
-                        sentiment: 0
+                        sentiment: 0,
+                        sentiment_natural: 0,
                      };
                 }
                 stats[weekString][recipient].messagesRead++;
+                totals[recipient].messagesRead++;
                 stats[weekString][recipient].totalReadTime += readTime;
+                totals[recipient].totalReadTime += readTime;
             }
         }
     });
 
-    // Calculate average read time for each person in each week
+    // Calculate total average read time and sentiment for each person
+    Object.entries(totals).forEach(([sender, total]) => {
+        totals[sender].averageReadTime = totals[sender].totalReadTime / totals[sender].messagesRead;
+        totals[sender].avgSentiment = totals[sender].sentiment / totals[sender].messagesSent;
+    });
+    
+    // Calculate weekly average read time ans sentiment for each person in each week
     for (const week in stats) {
         // Sort stats[week] by person's name
         stats[week] = Object.fromEntries(Object.entries(stats[week]).sort());
         for (const person in stats[week]) {
             const personStats = stats[week][person];
             personStats.averageReadTime = personStats.messagesRead === 0 ? 0 : personStats.totalReadTime / personStats.messagesRead;
-            //calculate sentiment
+            // calculate average of sentiment values
             personStats.avgSentiment = personStats.sentiment / personStats.messagesSent;
         }
     }
     // Output the statistics to Markdown (console) and CSV (file)
-
-    outputMarkdownSummary(stats);
     const csvFilePath = path.join(directory, `${fileNameWithoutExt}.csv`);
     outputCSV(stats, csvFilePath);
+    outputMarkdownSummary(totals, stats);
 }
 
 
