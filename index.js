@@ -228,8 +228,8 @@ function outputMarkdownSummary(totals, stats) {
         console.log(row);
     }
     console.log('\n')
-    header = '| Week                  | Name             | Sent | Words | View Time | Avg View Time | Avg. Sentiment | Sentiment ntrl |';
-    separator = '|-----------------------|------------------|------|-------|-----------|---------------|----------------|----------------|';
+    header = '| Week                  | Name             | Sent | Words | Avg View Time | Avg. Sentiment | Sentiment ntrl |';
+    separator = '|-----------------------|------------------|------|-------|---------------|----------------|----------------|';
 
     console.log(separator);
     console.log(header);
@@ -241,12 +241,11 @@ function outputMarkdownSummary(totals, stats) {
             const paddedWeek = (previousWeek !== week ? week : '').padEnd(21);
             const paddedName = person.padEnd(16);
             const paddedSent = personStats.messagesSent.toString().padStart(5);
-            const paddedTotalTime = (personStats.totalReadTime).toFixed(1).toString().padStart(10);
             const paddedAvgTime = (personStats.averageReadTime).toFixed(1).toString().padStart(14);
             const wordCountDisplay = personStats.messagesSent > 0 ? personStats.totalWords.toString().padStart(6) : ' '.padStart(6);
             const paddedSentiment = personStats.avgSentiment.toFixed(2).toString().padStart(14);
             const paddedSentiment_natural = personStats.sentiment_natural.toFixed(2).toString().padStart(14);
-            const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedTotalTime} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} |`;
+            const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} |`;
             console.log(row);
             previousWeek = week;
         }
@@ -264,11 +263,11 @@ function outputMarkdownSummary(totals, stats) {
  * @param {string} filePath - The path to the output CSV file.
  */
 function outputCSV(stats, filePath) {
-    let csvOutput = 'Week,Name,Messages Sent,Messages Read,Average Read Time (minutes),Total Words, Sentiment\n';
+    let csvOutput = 'Week,Name,Messages Sent,Messages Read,Average Read Time (minutes),Total Words, Sentiment, Sentiment_natural\n';
     for (const [week, weekStats] of Object.entries(stats)) {
         for (const [person, personStats] of Object.entries(weekStats)) {
             const wordCount = (personStats.totalWords !== undefined) ? personStats.totalWords : '';
-            csvOutput += `"${week}","${person}",${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)},${wordCount},${personStats.avgSentiment.toFixed(2)}\n`;
+            csvOutput += `"${week}","${person}",${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)},${wordCount},${personStats.avgSentiment.toFixed(2)},${personStats.sentiment_natural.toFixed(2)}\n`;
         }
     }
     console.log(`Writing CSV to ${filePath}`);
