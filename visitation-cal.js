@@ -1,3 +1,11 @@
+// Configuration for visitation intervals
+const VISITATION_CONFIG = {
+    WEEKS_PER_MONTH: 5,
+    ZOOM_WEEKS: [2, 4], // 0-indexed weeks for Zoom visits
+    VISIT_WEEKS: [1, 3], // 0-indexed weeks for in-person visits
+    WEEKEND_VISIT_WEEKS: [1, 3] // 0-indexed weeks for weekend visits
+};
+
 // This function calculates the first Friday of a given month
 function getFirstFridayOfMonth(year, month) {
     // Create a new date object for the first day of the month
@@ -28,41 +36,39 @@ function getFirstWeekStart(year, month) {
 function getWeeksInfo(year, month) {
     // Get the start date of the first week
     let firstWeekStart = getFirstWeekStart(year, month);
-    // console.log(`Start of the first week: ${firstWeekStart.toDateString()}`);
     // Initialize an array to hold the weeks info
     let weeksInfo = [];
     // Loop for each week of the month
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < VISITATION_CONFIG.WEEKS_PER_MONTH; i++) {
         // Create a new date object for the start of the week
         let startOfWeek = new Date(firstWeekStart);
         // Add the number of weeks to the date to get the start of the current week
         startOfWeek.setDate(firstWeekStart.getDate() + (i * 7));
-        // If the start of the week is in the next month and it's the last iteration, break the loop
-        if (startOfWeek.getMonth() + 1 !== month && i === 4) break;
         // Create a new date object for the end of the week
         let endOfWeek = new Date(startOfWeek);
-        // Add six days to the start of the week to get the end of the week
         endOfWeek.setDate(startOfWeek.getDate() + 6);
         // Create a new date object for Wednesday
         let wednesday = new Date(startOfWeek);
-        // Add three days to the start of the week to get Wednesday
         wednesday.setDate(startOfWeek.getDate() + 3);
-        // If Wednesday is in the current month or it's not the last iteration, add the week info to the array
-        if (wednesday.getMonth() + 1 === month || i < 4) {
-            // Log the week info
-            // console.log(`Week ${i + 1}: ${startOfWeek.toDateString()} - ${endOfWeek.toDateString()}`);
-            // Add the week info to the array
-            weeksInfo.push({
-                startOfWeek: startOfWeek,
-                endOfWeek: endOfWeek,
-                wednesday: wednesday
-            });
-        }
+        // If the start of the week is in the next month and it's the last iteration, break the loop
+        if (startOfWeek.getMonth() + 1 !== month && i === VISITATION_CONFIG.WEEKS_PER_MONTH - 1) break;
+        // Determine the type of visit for the week
+        let visitType = VISITATION_CONFIG.ZOOM_WEEKS.includes(i) ? 'Zoom' : 'Visit';
+        // Determine if there is a weekend visit
+        let weekendVisit = VISITATION_CONFIG.WEEKEND_VISIT_WEEKS.includes(i);
+        // Add the week info to the array
+        weeksInfo.push({
+            startOfWeek: startOfWeek,
+            endOfWeek: endOfWeek,
+            wednesday: wednesday,
+            visitType: visitType,
+            weekendVisit: weekendVisit
+        });
     }
     // Return the weeks info
     return weeksInfo;
 }
-// console.log(getWeeksInfo(2024, 5));
+
 function printWeeksInfo(weeksInfo, month) {
     weeksInfo.forEach((info, index) => {
         console.log(`\nWeek ${index + 1}: ${info.startOfWeek.toDateString()} - ${info.endOfWeek.toDateString()}`);
@@ -84,7 +90,62 @@ function printWeeksInfo(weeksInfo, month) {
     });
 }
 
-// Example usage for April 2024
-const weeksInfo = getWeeksInfo(2024, 5);
-printWeeksInfo(weeksInfo, 5);
+function printMonthCalendar(year, month, weeksInfo) {
+    // Get the first day of the month
+    let firstDay = new Date(year, month - 1, 1).getDay();
+    // Get the number of days in the month
+    let daysInMonth = new Date(year, month, 0).getDate();
+    // Initialize the calendar as a 2D array
+    let calendar = Array.from({ length: 6 }, () => Array(7).fill(['       ', '       ']));
+    // Fill the calendar with the days of the month
+    let day = 1;
+    for (let i = 0; i < 6; i++) {
+        let weekendVisit = '';
+        let week = Math.floor((day + firstDay - 1) / 7);
+        if (week < weeksInfo.length && weeksInfo[week].weekendVisitType === 'Visit') {
+            weekendVisit = 'V';
+        }
+        for (let j = (i === 0 ? firstDay : 0); j < 7 && day <= daysInMonth; j++) {
+            // Check if the day is a Wednesday and if there is a visit or Zoom
+            let visit = '';
+            if (j === 3 && week < weeksInfo.length) {
+                visit = weeksInfo[week].visitType === 'Zoom' ? 'Z' : 'V';
+            }
+            // Add the day to the calendar
+            calendar[i][j] = [` ${day < 10 ? ' ' : ''}${day++} `, `  ${j === 5 || j === 6 ? weekendVisit : ''}${visit}  `];
+            // Pad the cell with spaces to ensure it's always the same length
+            while (calendar[i][j][0].length < 7) {
+                calendar[i][j][0] += ' ';
+            }
+            while (calendar[i][j][1].length < 7) {
+                calendar[i][j][1] += ' ';
+            }
+        }
+    }
+    // Print the calendar
+    console.log('  Su      Mo       Tu      We       Th      Fr       Sa');
+    console.log('---------------------------------------------------------');
+    for (let i = 0; i < 6; i++) {
+        console.log('|' + calendar[i].map(cell => cell[0]).join('|') + '|');
+        console.log('|' + calendar[i].map(cell => cell[1]).join('|') + '|');
+        console.log('---------------------------------------------------------');
+    }
+}
 
+// Get the year and month from the command line arguments
+const year = parseInt(process.argv[2]);
+const month = parseInt(process.argv[3]);
+
+// Check if the year and month are valid
+if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
+    console.error('Please provide a valid year and month as command line arguments.');
+    process.exit(1);
+}
+
+// Get the weeks info for the given year and month
+const weeksInfo = getWeeksInfo(year, month);
+// console.log(weeksInfo);
+
+// Print the weeks info and the month calendar
+printWeeksInfo(weeksInfo, month);
+printMonthCalendar(year, month, weeksInfo);
