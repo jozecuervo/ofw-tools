@@ -19,23 +19,31 @@ function calculateBuyout(netPropertyValue, yourSeparateShare, herSeparateShare, 
     };
 }
 
-// Example inputs based on your provided details
+// Home purchase details
 const houseValueAtPurchase = 770000;
 const yourSeparateInterest = 441000;
-const herSeparateInterest = 1300000
-const mortgageAtPurchase = 205000;
+const herSeparateInterest = 131000;
+const mortgageAtPurchase = 210000;
+
+// Home details at separation
 const principalPaidDuringMarriage = 170000;
-const principalPaidAfterSeparationByHer = 20000;
 const mortgageAtSeparation = 40000;
-const houseValueAtSeparation = 1100000;
-const wattsCredit = 21000; // Watts credits owed to you
-const epsteinCredit = 20000; // Epstein credits owed to her
+
+// Home details at division of assets
+const appraisedValue = 1005000;
+const principalPaidAfterSeparationByHer = 21800;
+const remaningMortgage = mortgageAtSeparation - principalPaidAfterSeparationByHer;
+// Credits
+const monthsSinceSeparation = 14.5;
+const monthlyRent = 3000;
+const wattsCredit = monthsSinceSeparation * (monthlyRent / 2); // Watts credits owed to you
+const epsteinCredit = principalPaidAfterSeparationByHer; // Epstein credits owed to her
 
 // Total Contributions (Separate + Community)
 const totalContribution = yourSeparateInterest + herSeparateInterest + principalPaidDuringMarriage;
 
 // Net Property Value after mortgage
-const netPropertyValue = houseValueAtSeparation - mortgageAtSeparation; 
+const netPropertyValue = appraisedValue - remaningMortgage;
 
 // Step 1: Separate Property Shares (Pro Rata)
 const yourSeparateShare = calculateShare(yourSeparateInterest, totalContribution, netPropertyValue);
@@ -48,19 +56,39 @@ const communityShare = calculateShare(principalPaidDuringMarriage, totalContribu
 const postSeparationShare = calculateShare(principalPaidAfterSeparationByHer, totalContribution, netPropertyValue);
 
 // Log the results
+console.log(``);
+console.log(`Home Purchase Details:\n`);
 console.log(`House Value at Purchase: $${houseValueAtPurchase}`);
-console.log(`House Value at Separation: $${houseValueAtSeparation}`);
-console.log(`------------------------------------------------`);
 console.log(`Your Separate Interest: $${yourSeparateInterest}`);
 console.log(`Her Separate Interest: $${herSeparateInterest}`);
+
+console.log(`\nHome Details at Separation:\n`);
+
 console.log(`Community Paid Principal: $${principalPaidDuringMarriage}`);
-console.log(`Post-Separation Payment by Her: $${principalPaidAfterSeparationByHer}`);
-console.log(`------------------------------------------------`);
+console.log(`Mortgage remaining at Separation: $${mortgageAtSeparation}`);
+
+console.log(`\nHome Details at Division of Assets:\n`);
+
+console.log(`Appraised Value: $${appraisedValue}`);
+console.log(`Principal Paid after Separation by Her: $${principalPaidAfterSeparationByHer}`);
+console.log(`Remaining Mortgage: $${remaningMortgage}`);
+console.log(`Net Home value after mortgage: $${netPropertyValue}`);
+
+console.log(`\nCalculated interests\n`);
+console.log(`Community Property Interest: $${communityShare.toFixed(2)}`);
 console.log(`Your Separate Property Share of Current Value: $${yourSeparateShare.toFixed(2)}`);
 console.log(`Her Separate Property Share of Current Value: $${herSeparateShare.toFixed(2)}`);
-console.log(`Community Property Share of Current Value: $${communityShare.toFixed(2)}`);
 console.log(`Her Post-Separation Property Share: $${postSeparationShare.toFixed(2)}`);
-console.log(`------------------------------------------------`);
+console.log(`Your total interest: $${(yourSeparateShare + (communityShare / 2)).toFixed(2)}`);
+console.log(`Her total interest: $${(herSeparateShare + (communityShare / 2) + postSeparationShare).toFixed(2)}`);
+
+console.log(`\nCredits:\n`);
+console.log(`Months since Separation: ${monthsSinceSeparation}`);
+console.log(`Watts Credit: $${wattsCredit}`);
+console.log(`Epstein Credit: $${epsteinCredit}`);
+
+console.log(`\nResults:\n`);
+
 
 // Step 4: Calculate Buyout Amounts with Watts and Epstein Credits
 const buyoutAmounts = calculateBuyout(
