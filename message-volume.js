@@ -55,20 +55,29 @@ function analyzeRapidFireMessages(messages, senderName, thresholdSeconds = 60 * 
   return clusters;
 }
 
-const rapidFireClusters = analyzeRapidFireMessages(messages, "");
+const rapidFireClusters = analyzeRapidFireMessages(messages, "Susan Plate");
+rapidFireClusters.filter(cluster => cluster.length > 2);
 
 // Output the clusters in a visually clear manner
 rapidFireClusters.forEach((cluster, idx) => {
-  console.log(`\n#${idx + 1} ${formatDate(cluster[0].sentDate)}:`);
+  let totalWords = cluster.reduce((acc, msg) => acc + msg.wordCount, 0);
+  let totalTime = (parseSentDate(cluster[cluster.length - 1].sentDate) - parseSentDate(cluster[0].sentDate)) / 1000 / 60  ;
+  let visualization = '»';
+  console.log(`\n${formatDate(cluster[0].sentDate)}: ${cluster.length} messages in ${totalTime} mins, ${totalWords} words`);
   cluster.forEach((msg, msgIdx) => {
+    let responseTimeSeconds = 0;
+    let responseTimeMinutes = 0;
     if (msgIdx === 0) {
-      console.log(`  [${formatTime(msg.sentDate)}] - ${msg.subject} - ${msg.wordCount} words`);
+      console.log(` [${formatTime(msg.sentDate)}] - ${msg.subject} `);
+      visualization += `[${msg.wordCount}w]`;
     } else {
-      const responseTimeSeconds = (parseSentDate(msg.sentDate) - parseSentDate(cluster[msgIdx - 1].sentDate)) / 1000;
-      const responseTimeMinutes = responseTimeSeconds / 60;
-      console.log(`  [${formatTime(msg.sentDate)}] - ${responseTimeMinutes} minutes later, ${msg.wordCount} words`);
+      responseTimeSeconds = (parseSentDate(msg.sentDate) - parseSentDate(cluster[msgIdx - 1].sentDate)) / 1000;
+      responseTimeMinutes = responseTimeSeconds / 60;
+      console.log(` [${formatTime(msg.sentDate)}] - ${responseTimeMinutes} mins later`);
+      visualization += `${'-'.repeat(responseTimeMinutes)}[${msg.wordCount}w]`;
     }
   });
+  console.log(visualization);
 });
 
 // Additional analysis for message volume
@@ -78,5 +87,10 @@ const messageVolumeByDate = messages.reduce((acc, msg) => {
   return acc;
 }, {});
 
-console.log("\nMessage volume by date:");
-console.table(messageVolumeByDate);
+// Filter out days with less than 3 messages
+const highVolumeMessageDates = Object.fromEntries(
+  Object.entries(messageVolumeByDate).filter(([_, count]) => count >= 3)
+);
+
+// console.log("\nMessage volume by date:");
+// console.table(highVolumeMessageDates);
