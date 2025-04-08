@@ -20,40 +20,68 @@ const {
  * @return {Object} - An object containing message data and calculated read times.
  */
 function parseMessage(messageBlock) {
-    // Split the message block on "Page X of Y" to isolate the first page
-    const pages = messageBlock.split(/Page \d+ of \d+/);
-    const firstPage = pages[0]; // The content before the first "Page X of Y"
-    // Extract the metadata block starting from the last occurrence of "Sent:"
-    const metadataIndex = firstPage.lastIndexOf("Sent:");
-    const metadataBlock = firstPage.substring(metadataIndex).trim();
-    let body = firstPage.substring(0, metadataIndex).trim(); // The body is everything before the metadata
-    if (pages.length > 1) {
-        const remainingPages = pages.slice(1).join(''); // Join the remaining pages back into a single string
-        // Clean up the body by trimming trailing newlines
-        body = body.concat(remainingPages).trim();
-    }
-    // console.log(body);
 
-    // Initialize message object with the body
+    // Initialize message object
     const message = {
-        body: body.trim(),
-        wordCount: body.split(/\s+/).filter(Boolean).length // Count words in the body
+        body: '',
+        wordCount: 0,
+        recipientReadTimes: {}
     };
 
-    // Process the metadata block for details
-    const metadataLines = metadataBlock.split('\n');
-    metadataLines.forEach(line => {
-        if (line.startsWith('Sent:')) {
-            message.sentDate = parseDate(line.substring(5).trim());
-        } else if (line.startsWith('From:')) {
-            message.sender = line.substring(5).trim();
-        } else if (line.startsWith('Subject:')) {
-            message.subject = line.substring(8).trim();
+    // Split the message block into lines
+    const lines = messageBlock.trim().split('\n');
+    
+    let inBody = false;
+    let bodyLines = [];
+    let currentMetadataField = null;
+    
+    // Process each line to extract metadata
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        // Skip empty lines
+        if (!line) continue;
+        
+        // Check if we've reached the message body
+        if (inBody) {
+            bodyLines.push(line);
+            continue;
         }
-    });
-
+        
+        // Process metadata fields
+        if (line === 'Sent:') {
+            currentMetadataField = 'sent';
+        } else if (line === 'From:') {
+            currentMetadataField = 'from';
+        } else if (line === 'To:') {
+            currentMetadataField = 'to';
+        } else if (line === 'Subject:') {
+            currentMetadataField = 'subject';
+        } else if (currentMetadataField === 'sent' && line) {
+            message.sentDate = parseDate(line);
+            currentMetadataField = null;
+        } else if (currentMetadataField === 'from' && line) {
+            message.sender = line;
+            currentMetadataField = null;
+        } else if (currentMetadataField === 'to' && line) {
+            const recipientMatch = line.match(/(.+?)\(First Viewed: (.+?)\)/);
+            if (recipientMatch) {
+                const recipient = recipientMatch[1].trim();
+                const firstViewed = recipientMatch[2].trim();
+                message.recipientReadTimes[recipient] = firstViewed !== 'Never' ? parseDate(firstViewed) : 'Never';
+            }
+            // Stay in 'to' field as there might be multiple recipients
+        } else if (currentMetadataField === 'subject' && line) {
+            message.subject = line;
+            currentMetadataField = null;
+            inBody = true; // Next non-empty line starts the body
+        }
+    }
+    
+    message.body = bodyLines.join('\n').trim();
+    
     // Calculate word count
-    message.wordCount = message.body ? message.body.split(/\s+/).length : 0;
+    message.wordCount = message.body ? message.body.split(/\s+/).filter(Boolean).length : 0;
 
     // Perform sentiment analysis on the message body
     if (message.body) {
@@ -63,34 +91,12 @@ function parseMessage(messageBlock) {
         message.sentiment_natural = 0;
     }
 
-    // Perform sentiment analysis on the message body
+    // Perform sentiment analysis on the message body using the sentiment library
     if (message.body) {
         const sentimentResult = sentiment.analyze(message.body);
-        message.sentiment = sentimentResult.score; // Add the sentiment score to the message object
+        message.sentiment = sentimentResult.score;
     } else {
-        message.sentiment = 0; // Default to 0 if there's no message body
-    }
-
-
-    // Extracting recipient view times and calculating read times
-    message.recipientReadTimes = {};
-
-    // Identify the section of text containing recipients
-    const recipientSectionMatch = messageBlock.match(/To:(.+?)\nSubject:/s);
-
-    if (recipientSectionMatch) {
-        const recipientSection = recipientSectionMatch[1];
-        const recipientLines = recipientSection.split('\n');
-
-        recipientLines.forEach(line => {
-            const recipientMatch = line.match(/(.+?)\(First Viewed: (.+?)\)/);
-
-            if (recipientMatch) {
-                const recipient = recipientMatch[1].trim();
-                const firstViewed = recipientMatch[2].trim();
-                message.recipientReadTimes[recipient] = firstViewed !== 'Never' ? parseDate(firstViewed) : 'Never';
-            }
-        });
+        message.sentiment = 0;
     }
 
     return message;
@@ -214,9 +220,10 @@ function outputMarkdownSummary(totals, stats) {
     let separator = '|------------------|------|-------|-----------|---------------|----------------|----------------|';
     console.log(separator);
     for (const [person, personTotals] of Object.entries(totals)) {
-        if (person.includes('Marie') || person.includes('Nora') || person.includes('Henry')) {
+        // Skip undefined entries or specific people
+        if (!person || person === 'undefined' || person.includes('Marie') || person.includes('Nora') || person.includes('Henry') || person.includes('Megan')) {
             continue;
-        } 
+        }
         const paddedName = person.padEnd(16);
         const paddedSent = personTotals.messagesSent.toString().padStart(5);
         const paddedTotalTime = (personTotals.totalReadTime).toFixed(1).toString().padStart(10);
@@ -238,6 +245,10 @@ function outputMarkdownSummary(totals, stats) {
     for (const [week, weekStats] of Object.entries(stats)) {
         console.log(separator);
         for (const [person, personStats] of Object.entries(weekStats)) {
+            // Skip undefined entries or specific people
+            if (!person || person === 'undefined' || person.includes('Marie') || person.includes('Nora') || person.includes('Henry')) {
+                continue;
+            }
             const paddedWeek = (previousWeek !== week ? week : '').padEnd(21);
             const paddedName = person.padEnd(16);
             const paddedSent = personStats.messagesSent.toString().padStart(5);
@@ -279,26 +290,17 @@ function outputCSV(stats, filePath) {
  * @param {Array} messages - The array of message objects.
  */
 function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
-    /**
-     * The message statistics object.
-     * example:
-     * {
-     *  '2021-01-01': {
-     *     'Alice': {
-     *      messagesSent: 3,
-     *      messagesRead: 2,
-     *      totalReadTime: 10,
-     *      totalWords: 100
-     *     },
-     *     'Bob': {
-     *       ...
-     *     }
-     */
     const stats = {};
     const totals = {};
 
     messages.forEach(message => {
         const weekString = getWeekString(message.sentDate);
+        // Skip messages with undefined senders
+        if (!message.sender) {
+            console.warn('Found message with undefined sender:', message.subject || 'No subject');
+            return;
+        }
+        
         const sender = message.sender;
         if (!totals[sender]) {
             totals[sender] = {
@@ -337,6 +339,10 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
 
         // Increment read message count and total read time for each recipient
         for (const [recipient, firstViewed] of Object.entries(message.recipientReadTimes)) {
+            // TODO Ignore messages sent to Marie and Nora
+            if (recipient.includes('Marie') || recipient.includes('Nora') || recipient.includes('Henry')) {
+                continue;
+            } 
             if (firstViewed !== 'Never') {
                 const firstViewedDate = new Date(firstViewed);
                 const readTime = (firstViewedDate - message.sentDate) / 60000;
