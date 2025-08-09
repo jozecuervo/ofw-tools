@@ -90,14 +90,14 @@ Pass arguments after `--`.
 
 ### 5) iMessage Parser with Sentiment (`imessage.js`)
 
-- **Purpose**: Parse a text export of iMessage conversations, perform sentiment analysis, and write per-year JSON files.
+- **Purpose**: Parse a text export of iMessage conversations, perform sentiment analysis, and emit per-year JSON files.
 - **Input**: Path to a text export (lines grouped as timestamp → sender → content).
-- **Output**: `output_<year>.json` files written next to the script.
+- **Output**: `output/output_<year>.json` by default (directory is gitignored). Override with `--out-dir`.
 - **Run**:
   ```bash
   npm run imessage -- /absolute/path/to/imessage.txt
+  npm run imessage -- /absolute/path/to/imessage.txt -- --out-dir ./custom_output
   ```
-- **Note**: The script currently uses sensible defaults and example path; passing a file path via CLI is recommended.
 
 ### 6) Moore/Marsden Calculator (`moore-marsden.js`)
 
