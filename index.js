@@ -74,9 +74,9 @@ function parseMessage(messageBlock) {
         if (!m) continue;
         const key = m[1].toLowerCase();
         const val = (m[2] || '').trim();
-        if (subjectIdx === -1 && key === 'subject') { subjectIdx = i; message.subject = val || 'No subject'; }
+        if (subjectIdx === -1 && key === 'subject') { subjectIdx = i; message.subject = val || ''; }
         else if (toIdx === -1 && key === 'to') { toIdx = i; }
-        else if (fromIdx === -1 && key === 'from') { fromIdx = i; message.sender = val; }
+        else if (fromIdx === -1 && key === 'from') { fromIdx = i; message.sender = val || ''; }
         else if (sentIdx === -1 && key === 'sent') { sentIdx = i; if (val) message.sentDate = parseDate(val); }
     }
 
@@ -96,15 +96,58 @@ function parseMessage(messageBlock) {
         }
     }
 
-    // If sent date missing inline, try next line after Sent:
-    if (!message.sentDate && sentIdx !== -1 && lines[sentIdx + 1]) {
-        message.sentDate = parseDate(lines[sentIdx + 1]);
+    // If Sent/From/Subject values are on the following line, read them
+    const isMetaAt = (idx) => idx >= 0 && idx < lines.length && metaRegex.test(lines[idx]);
+    const nextNonEmpty = (idx) => {
+        let j = idx + 1;
+        while (j < lines.length && !lines[j]) j++;
+        return j < lines.length ? lines[j] : '';
+    };
+    if (!message.sentDate && sentIdx !== -1) {
+        const v = nextNonEmpty(sentIdx);
+        if (v && !metaRegex.test(v)) message.sentDate = parseDate(v);
+    }
+    if (!message.sender && fromIdx !== -1) {
+        const v = nextNonEmpty(fromIdx);
+        if (v && !metaRegex.test(v)) message.sender = v.trim();
+    }
+    if (!message.subject && subjectIdx !== -1) {
+        const v = nextNonEmpty(subjectIdx);
+        if (v && !metaRegex.test(v)) message.subject = v.trim();
     }
 
-    // Body = everything before first metadata occurrence
-    const firstMetaIdx = [subjectIdx, toIdx, fromIdx, sentIdx].filter(i => i !== -1).sort((a,b)=>a-b)[0];
-    const bodyEnd = firstMetaIdx !== undefined ? firstMetaIdx : lines.length;
-    const bodyLines = lines.slice(0, bodyEnd).filter(l => !metaRegex.test(l) && l && !/^Page \d+ of \d+/i.test(l));
+    // Determine body region based on whether metadata is at head or tail
+    const metaIdxs = [subjectIdx, toIdx, fromIdx, sentIdx].filter(i => i !== -1).sort((a,b)=>a-b);
+    const firstMetaIdx = metaIdxs.length ? metaIdxs[0] : -1;
+    const lastMetaIdx = metaIdxs.length ? metaIdxs[metaIdxs.length - 1] : -1;
+
+    const nextNonEmptyIndex = (idx) => {
+        let j = idx + 1;
+        while (j < lines.length && !lines[j]) j++;
+        return j;
+    };
+
+    let bodyStart = 0;
+    let bodyEnd = lines.length;
+    const looksLikeHeadMeta = firstMetaIdx !== -1 && firstMetaIdx < 10; // metadata block at top
+    if (looksLikeHeadMeta && subjectIdx !== -1) {
+        // Body begins after the subject value line
+        const subjValIdx = nextNonEmptyIndex(subjectIdx);
+        bodyStart = (subjValIdx < lines.length && !metaRegex.test(lines[subjValIdx])) ? subjValIdx + 1 : subjectIdx + 1;
+    } else if (firstMetaIdx !== -1) {
+        // Tail metadata: body precedes the first metadata line
+        bodyEnd = firstMetaIdx;
+    }
+
+    const bodyLines = lines
+        .slice(bodyStart, bodyEnd)
+        .filter(l => {
+            if (!l) return false;
+            if (metaRegex.test(l)) return false;
+            if (/Page\s+\d+\s+of\s+\d+/i.test(l)) return false; // drop any page header/footer variants
+            if (/^\s*\|\s*Message ReportPage/i.test(l)) return false; // drop OFW report banner line
+            return true;
+        });
     message.body = bodyLines.join('\n').trim();
     message.wordCount = message.body ? message.body.split(/\s+/).filter(Boolean).length : 0;
 
@@ -411,6 +454,9 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
     Object.entries(totals).forEach(([sender, total]) => {
         totals[sender].averageReadTime = total.messagesRead === 0 ? 0 : total.totalReadTime / total.messagesRead;
         totals[sender].avgSentiment = total.messagesSent === 0 ? 0 : total.sentiment / total.messagesSent;
+        // Ensure numeric fields are finite numbers to avoid NaN in printing
+        if (!Number.isFinite(totals[sender].avgSentiment)) totals[sender].avgSentiment = 0;
+        if (!Number.isFinite(totals[sender].averageReadTime)) totals[sender].averageReadTime = 0;
     });
     
     // Calculate weekly average read time ans sentiment for each person in each week
@@ -420,8 +466,8 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
         for (const person in stats[week]) {
             const personStats = stats[week][person];
             personStats.averageReadTime = personStats.messagesRead === 0 ? 0 : personStats.totalReadTime / personStats.messagesRead;
-            // calculate average of sentiment values
-            personStats.avgSentiment = personStats.sentiment / personStats.messagesSent;
+            // average sentiment only if messagesSent > 0
+            personStats.avgSentiment = personStats.messagesSent > 0 ? (personStats.sentiment / personStats.messagesSent) : 0;
         }
     }
     // Output the statistics to Markdown (console) and CSV (file)
