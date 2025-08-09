@@ -33,7 +33,7 @@ Pass arguments after `--`.
 ### 1) OFW PDF Analyzer (`index.js`)
 
 - **Purpose**: Parse an Our Family Wizard Messages PDF and compute weekly stats per person: messages sent/read, average read time, total words, and sentiment. Outputs JSON, Markdown to console, and CSV.
-- **Input**: Path to an OFW messages PDF (export with full pages per message).
+- **Input**: Path to an OFW messages PDF (export with full pages per message). Supports both legacy (metadata after body) and new (metadata at head; values on next line) formats.
 - **Output**:
   - `same-directory/<basename>.json` (parsed messages)
   - `same-directory/<basename>.csv` (weekly stats)
@@ -42,6 +42,14 @@ Pass arguments after `--`.
   ```bash
   npm run ofw:analyze -- /absolute/path/to/OFW_Messages_Report_2025-03-04.pdf
   ```
+- **Options**:
+  - `--no-markdown`: Skip writing per-message Markdown file
+  - `--no-csv`: Skip writing weekly CSV
+  - `--exclude <csv>`: Hide names containing any of the given substrings (case-insensitive) in printed tables
+- **Display**:
+  - “To:” pseudo-rows (recipient read-time buckets) are hidden in tables but still used for read-time stats.
+  - Avg sentiment prints 0.00 when no messages were sent for that row/week.
+  - Page banners and footers are excluded from message bodies.
 
 ### 2) Rapid-Fire Message Clusters (`message-volume.js`)
 - **Purpose**: From the JSON produced by the OFW PDF Analyzer, find clusters of back-to-back messages within a time threshold (default 30 minutes) for a given sender.
@@ -52,7 +60,10 @@ Pass arguments after `--`.
   ```bash
   npm run ofw:clusters -- /absolute/path/to/OFW_Messages_Report_2025-03-04_12-04-15.json
   ```
-- **Note**: To analyze a different sender or change the threshold, edit `message-volume.js` variables: `senderName` and `thresholdSeconds`.
+- **Flags**:
+  - `--sender "Name"` (default: "José Hernandez")
+  - `--threshold-min <minutes>` (default: 30)
+  - `--min-messages <n>` (default: 3)
 
 ### 3) Visitation Calendar Helper (`visitation-cal.js`)
 
@@ -98,6 +109,7 @@ Pass arguments after `--`.
   npm run imessage -- /absolute/path/to/imessage.txt
   npm run imessage -- /absolute/path/to/imessage.txt -- --out-dir ./custom_output
   ```
+ - **Notes**: Uses `sentiment`, `natural`, and `polarity` libraries. Tests mock `polarity` for Jest compatibility.
 
 ### 6) Moore/Marsden Calculator (`moore-marsden.js`)
 
@@ -118,6 +130,7 @@ Pass arguments after `--`.
   # With your local config (gitignored by default) and JSON output
   npm run moore-marsden -- --config ./source_files/moore-marsden.config.json --out-json ./output/moore-marsden.json
   ```
+ - **Citations**: Moore, Marsden; Family Code §§ 760, 770, 2640.
 
 ### 7) Apportionment & Buyout with Credits (`apportionment-calc.js`)
 
@@ -132,6 +145,7 @@ Pass arguments after `--`.
   # With your local config (gitignored by default) and JSON output
   npm run apportionment -- --config ./source_files/apportionment.config.json --out-json ./output/apportionment.json
   ```
+ - **Notes**: Neutral, even-number example defaults to illustrate formulas. Future enhancement: toggles for Epstein-only vs. equity allocation and FRV offsets.
 
 ---
 
@@ -144,7 +158,7 @@ Pass arguments after `--`.
 
 ## Notes and Limitations
 
-- The OFW parser expects the standard PDF export format and may break if OFW changes formatting.
+- The OFW parser supports multiple OFW export layouts; if OFW changes formatting again, please open an issue with a sample.
 - Sentiment analysis is heuristic and should be treated as supportive, not dispositive.
 - Several scripts contain example inputs; update those inline for your case as needed.
 
