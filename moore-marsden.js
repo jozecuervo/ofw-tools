@@ -10,17 +10,49 @@
  * - In re Marriage of Marsden (1982) 130 Cal.App.3d 426
  * - Family Code §§ 760 (community property), 770 (separate property), 2640 (SP reimbursements)
  *
+ * Statutory quotes (California Family Code)
+ * - § 760 (Community property presumption):
+ *   "Except as otherwise provided by statute, all property, real or personal, wherever situated,
+ *    acquired by a married person during the marriage while domiciled in this state is community property."
+ *   Source: https://codes.findlaw.com/ca/family-code/fam-sect-760/
+ *
+ * - § 770(a) (Separate property defined):
+ *   "Separate property of a married person includes:
+ *     (1) All property owned by the person before marriage.
+ *     (2) All property acquired by the person after marriage by gift, bequest, devise, or descent.
+ *     (3) The rents, issues, and profits of the property described in this section."
+ *   Source: https://codes.findlaw.com/ca/family-code/fam-sect-770/
+ *
+ * - § 2640(a), (b) (Reimbursement for SP contributions to acquisition of CP):
+ *   "(a) In the division of the community estate under this division, unless a party has made a written
+ *    waiver of the right to reimbursement or has signed a writing that has the effect of a waiver, the party
+ *    shall be reimbursed for the party’s contributions to the acquisition of property of the community estate
+ *    to the extent the party traces the contributions to a separate property source."
+ *   "(b) A party shall be reimbursed for separate property contributions to the acquisition of property to
+ *    the extent the party traces the contributions to a separate property source. Contributions to the acquisition
+ *    of property include downpayments, payments for improvements, and payments that reduce the principal of a loan
+ *    used to finance the purchase or improvements of the property but do not include payments of interest on the loan
+ *    or payments made for maintenance, insurance, or taxation of the property."
+ *   Source: https://codes.findlaw.com/ca/family-code/fam-sect-2640/
+ *
  * Core rule
  * - Community share of appreciation during marriage = (CP principal reduction ÷ purchase price) × appreciation during marriage.
  * - SP interest consists of: down payment + SP principal reduction + pre‑marital appreciation + SP share of appreciation.
  * - CP interest consists of: CP principal reduction + CP share of appreciation.
  * - Only principal reduction counts. Interest, taxes, insurance, and routine maintenance are excluded from the Moore/Marsden ratio.
  *
+ * Scope and assumptions
+ * - This worksheet assumes a single acquisition loan and does not account for later refinances, title transmutations,
+ *   or capital improvements; those events can alter characterization and require adjustments beyond this worksheet.
+ * - Figures should be based on documentation (amortization schedules, statements, appraisals). Use of estimates can skew results.
+ *
  * CLI
  * - node moore-marsden.js [--config <path-to-json>] [--out-json <path>]
  *   --config: Provide inputs via JSON; otherwise the tool will look for
  *             source_files/moore-marsden.config.json (gitignored) if present.
  *   --out-json: Write a machine-readable JSON summary of the worksheet results.
+ *   --summary: Print only lines 12–13 (SP/CP interests)
+ *   --no-explain: Hide explanatory header
  */
 
 const fs = require('fs');
@@ -38,6 +70,8 @@ function subtractLine4FromLine6(fairMarketAtMarriage, fairMarketAtDivision) {
  * Per Moore/Marsden: community proportion of appreciation is CP principal reduction ÷ purchase price.
  * See Moore, 28 Cal.3d at 371–372 (community acquires a pro tanto interest proportionate to the community's
  * reduction of principal) and Marsden, 130 Cal.App.3d at 436–437 (community share of appreciation during marriage).
+ * Family Code § 2640(b) confirms that qualifying contributions include principal reduction, but exclude interest,
+ * taxes, insurance, and routine maintenance payments.
  * @param {number} paymentsWithCommunityFunds - Total CP principal reduction during marriage
  * @param {number} purchasePrice - Original purchase price
  * @returns {number} proportion in [0,1]
@@ -191,18 +225,19 @@ function printWorksheet() {
     console.log(`5. Principal payments with community funds:     ${currencyFormatter.format(input.paymentsWithCommunityFunds)}`);
     console.log(`6. Fair Market Value at Date of Division:       ${currencyFormatter.format(input.fairMarketAtDivision)}`);
     console.log(`---------------------------------------------------------------`);
-    console.log(`7. Appreciation before marriage:                ${currencyFormatter.format(worksheet.line7Result)}`);
-    console.log(`8. Appreciation during marriage:                ${currencyFormatter.format(worksheet.line8Result)}`);
-    console.log(`9. Proportion of community payments (CP/Purchase Price): ${percentageFormatter.format(worksheet.line9Result)}`);
-    console.log(`10. Community share of appreciation:            ${currencyFormatter.format(worksheet.line10Result)}`);
-    console.log(`11. Separate property share of appreciation:    ${currencyFormatter.format(worksheet.line11Result)}`);
+    // Show-your-work breakdowns
+    console.log(`7. Appreciation before marriage:                ${currencyFormatter.format(worksheet.line7Result)} = FMV@Marriage (${currencyFormatter.format(input.fairMarketAtMarriage)}) − Purchase (${currencyFormatter.format(input.purchasePrice)})`);
+    console.log(`8. Appreciation during marriage:                ${currencyFormatter.format(worksheet.line8Result)} = FMV@Division (${currencyFormatter.format(input.fairMarketAtDivision)}) − FMV@Marriage (${currencyFormatter.format(input.fairMarketAtMarriage)})`);
+    console.log(`9. Proportion of community payments (CP/Purchase Price): ${percentageFormatter.format(worksheet.line9Result)} = CP Principal (${currencyFormatter.format(input.paymentsWithCommunityFunds)}) ÷ Purchase (${currencyFormatter.format(input.purchasePrice)})`);
+    console.log(`10. Community share of appreciation:            ${currencyFormatter.format(worksheet.line10Result)} = Line 8 (${currencyFormatter.format(worksheet.line8Result)}) × Line 9 (${percentageFormatter.format(worksheet.line9Result)})`);
+    console.log(`11. Separate property share of appreciation:    ${currencyFormatter.format(worksheet.line11Result)} = Line 8 (${currencyFormatter.format(worksheet.line8Result)}) − Line 10 (${currencyFormatter.format(worksheet.line10Result)})`);
     console.log(`---------------------------------------------------------------`);
 }
 
 function printSummary() {
     const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-    console.log(`12. Separate Property Interest (SP Interest):   ${currencyFormatter.format(worksheet.spInterest)}`);
-    console.log(`13. Community Property Interest (CP Interest):  ${currencyFormatter.format(worksheet.cpInterest)}\n`);
+    console.log(`12. Separate Property Interest (SP Interest):   ${currencyFormatter.format(worksheet.spInterest)} = Down Payment (${currencyFormatter.format(input.downPayment)}) + SP Principal (${currencyFormatter.format(input.paymentsWithSeparateFunds)}) + Line 7 (${currencyFormatter.format(worksheet.line7Result)}) + Line 11 (${currencyFormatter.format(worksheet.line11Result)})`);
+    console.log(`13. Community Property Interest (CP Interest):  ${currencyFormatter.format(worksheet.cpInterest)} = CP Principal (${currencyFormatter.format(input.paymentsWithCommunityFunds)}) + Line 10 (${currencyFormatter.format(worksheet.line10Result)})\n`);
     if (worksheet.line9Result > 1) {
         console.warn('Warning: CP proportion exceeds 100%. Check inputs for purchase price and principal amounts.');
     }
