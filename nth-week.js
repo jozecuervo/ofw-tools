@@ -39,7 +39,7 @@ function tallyFifthWeeks(startYear, endYear, startDayOrdinal, options = { verbos
 }
 
 function printHelp() {
-    console.log(`\nUsage: node nth-week.js [--start <year>] [--end <year>] [--weekday <0-6|csv>] [--list]\n\nOptions:\n  --start     Start year (default: 2024)\n  --end       End year inclusive (default: 2035)\n  --weekday   Weekday ordinal 0=Sun ... 6=Sat or CSV of ordinals (default: 5,6)\n  --list      Print each 5th-occurrence date found (verbose)\n  -h, --help  Show this help\n`);
+    console.log(`\nUsage: node nth-week.js [--start <year>] [--end <year>] [--weekday <0-6|csv>] [--list]\n\nOptions:\n  --start     Start year (default: current year)\n  --end       End year inclusive (default: start + 18)\n  --weekday   Weekday ordinal 0=Sun ... 6=Sat or CSV of ordinals (default: 5,6)\n  --list      Print each 5th-occurrence date found (verbose)\n  -h, --help  Show this help\n`);
 }
 
 const args = process.argv.slice(2);
@@ -48,11 +48,11 @@ if (args.includes('-h') || args.includes('--help')) {
     process.exit(0);
 }
 
-let start = 2024;
-let end = 2035;
+let start = new Date().getFullYear();
+let end = start + 18;
 let weekdays = [5, 6];
-let verboseDates = false;
-let perYear = false;
+let verboseDates = true;
+let perYear = true;
 for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--start') start = Number(args[++i]);
@@ -89,7 +89,7 @@ console.log(`\n5th week counter (court-style)`);
 console.log(`Range: ${start}–${end}`);
 const humanList = weekdays.map(wd => weekdayNames[wd]).join(' and ');
 console.log(`Definition: Week 1 is the first week that contains a ${weekdays.length > 1 ? humanList : humanList}. A month has a "5th week" if it contains 5 such ${weekdays.length > 1 ? 'anchor days' : 'anchor day'} in that month.`);
-if (!verboseDates && !perYear) console.log('Use --list for each date; --per-year for yearly counts.');
+console.log('Showing dates and per-year summary.');
 
 weekdays.forEach(wd => {
     const total = tallyFifthWeeks(start, end, wd, { verboseDates, perYear });

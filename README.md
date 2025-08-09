@@ -44,7 +44,6 @@ Pass arguments after `--`.
   ```
 
 ### 2) Rapid-Fire Message Clusters (`message-volume.js`)
-
 - **Purpose**: From the JSON produced by the OFW PDF Analyzer, find clusters of back-to-back messages within a time threshold (default 30 minutes) for a given sender.
 - **Defaults**: Looks for sender "José Hernandez" and prints clusters of 3+ messages.
 - **Input**: Path to the JSON file (e.g., `OFW_Messages_Report_2025-03-04_12-04-15.json`).
@@ -67,12 +66,25 @@ Pass arguments after `--`.
 
 ### 4) Fifth-Week Counter (`nth-week.js`)
 
-- **Purpose**: Count months that contain a 5th occurrence of a weekday in a given range (example prints Friday and Saturday counts for 2024–2035).
+- **Purpose**: Quantify how often a month has a “5th week” under common court-style definitions.
+  - Definition used: Week 1 is the first week that contains the anchor day(s) (e.g., Friday/Saturday). A month has a “5th week” if it contains 5 such anchor days in that month.
+- **Defaults**: Counts Friday (5) and Saturday (6) for current year through current year + 18. Prints all dates and a per-year summary by default.
 - **Run**:
   ```bash
   npm run nth-week
   ```
-- **Note**: Adjust the years and weekday ordinals in `nth-week.js` if you need different ranges.
+- **Options** (optional; pass flags after `--` with npm):
+  - `--start <year>` and `--end <year>`: Year range (inclusive). Defaults: start = current year; end = start + 18.
+  - `--weekday <0-6|csv>`: Weekday ordinal(s) (0=Sun … 6=Sat)
+  - `--anchor <name[,name]>`: Named weekday(s), e.g. `Friday` or `Friday,Saturday`
+  - `--list`: Print each 5th-occurrence date (on by default)
+  - `--per-year`: Show a yearly summary (on by default)
+- **Examples**:
+  ```bash
+  npm run nth-week
+  npm run nth-week -- --start 2024 --end 2026 --anchor Friday
+  npm run nth-week -- --weekday 3 --start 2024 --end 2025
+  ```
 
 ### 5) iMessage Parser with Sentiment (`imessage.js`)
 
