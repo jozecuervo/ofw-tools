@@ -13,5 +13,6 @@ description: Overarching instructions for AI assistance in this repo
   - [`communication-templates.md`](./prompt-snippets/communication-templates.md)
   - [`document-checklists.md`](./prompt-snippets/document-checklists.md)
   - [`workflow-guardrails.md`](./prompt-snippets/workflow-guardrails.md)
+  - Legal review: [`legal-review.md`](./prompts/legal-review.md), [`legal-escalation-checklist.md`](./prompt-snippets/legal-escalation-checklist.md)
 
 
