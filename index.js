@@ -394,6 +394,10 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
     const totals = {};
 
     messages.forEach(message => {
+        // Skip placeholders and any entries without proper metadata
+        if (message && (message._nonMessage || !message.sentDate || !message.sender)) {
+            return;
+        }
         const weekString = getWeekString(message.sentDate);
         // Skip messages with undefined senders
         if (!message.sender) {
@@ -439,10 +443,6 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
 
         // Increment read message count and total read time for each recipient
         for (const [recipient, firstViewed] of Object.entries(message.recipientReadTimes)) {
-            // TODO Ignore messages sent to Marie and Nora
-            if (recipient.includes('Marie') || recipient.includes('Nora') || recipient.includes('Henry')) {
-                continue;
-            } 
             if (firstViewed !== 'Never') {
                 const firstViewedDate = new Date(firstViewed);
                 const readTime = (firstViewedDate - message.sentDate) / 60000;

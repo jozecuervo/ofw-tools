@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.1.1] - 2025-08-09
+
+### OFW PDF Analyzer (`index.js`)
+- Removed hard-coded recipient ignores; visibility is now controlled solely via `--exclude <csv>` patterns.
+- Skips non-message placeholder rows (e.g., page banners) during aggregation to prevent entries like "OFW Report" from appearing in totals and weekly tables.
+
+### Documentation
+- Minor description/overview tweaks to clarify project scope.
+
 ## [1.1.0] - 2025-08-09
 
 ### OFW PDF Analyzer (`index.js`)
