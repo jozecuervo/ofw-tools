@@ -177,3 +177,7 @@ This repo is equipped with AI prompt files for enhanced development.
 - Examples: See individual `.md` files for task-specific guidance.
 
 You can also use these prompts to guide code generation, reviews, and testing tasks. If you have a generator tool, you may export repo-wide context to a file such as `prompts/entire-codebase.md` and keep temporary artifacts ignored by Git.
+
+### Licensing
+
+Prompts are governed by `PROMPTS_LICENSE.md` and may differ from the code license.

@@ -16,4 +16,15 @@ description: Overarching instructions for AI assistance in this repo
   - Legal review: [`legal-review.md`](./prompts/legal-review.md), [`legal-escalation-checklist.md`](./prompt-snippets/legal-escalation-checklist.md)
 - Continuous improvement: follow [`continuous-improvement.md`](./prompt-snippets/continuous-improvement.md) and use the "Prompt Feedback" issue template.
 
+## Capability Map
+
+- General coding: `prompts/general-coding.md`
+- Testing (Jest, AAA): `prompts/unit-testing.md`
+- Code review: `prompts/code-review.md`
+- Node CLI patterns: `prompts/js-cli-tools.md`
+- OFW parsing and clusters: `prompts/ofw-parsing.md`
+- Divorce Navigator (persona, tone, I/O): `prompts/divorce-navigator.md`
+- Legal review and escalation: `prompts/legal-review.md`, `prompt-snippets/legal-escalation-checklist.md`
+- Reusable snippets: `prompt-snippets/*`
+
 

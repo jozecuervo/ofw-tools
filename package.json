@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "prompts:validate": "node scripts/validate-prompts.js",
     "ofw:analyze": "node index.js",
     "ofw:clusters": "node message-volume.js",
     "visitation": "node visitation-cal.js",
