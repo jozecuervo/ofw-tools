@@ -172,26 +172,36 @@ function parseMessage(messageBlock) {
 function processMessages(text) {
     const messages = [];
     const lines = text.split('\n');
-    const boundaryRegex = /^\s*Message\s+\d+\s+of\s+\d+\s*$/; // strict boundary line only
+    const boundaryRegex = /^\s*Message\s+\d+\s+of\s+\d+\s*$/; // boundary marks END of a message block
     let current = [];
-    let started = false;
+    const hasMeta = (block) => /(\n|^)Sent\s*:|\nFrom\s*:|\nTo\s*:|\nSubject\s*:/m.test(block);
+    const createPlaceholder = () => ({
+        _nonMessage: true,
+        sender: 'OFW Report',
+        recipientReadTimes: {},
+        subject: 'Page Banner',
+        body: '',
+        wordCount: 0,
+        sentiment: 0,
+        sentiment_natural: 0,
+    });
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (boundaryRegex.test(line)) {
-            if (started && current.length) {
+            if (current.length) {
                 const blockText = current.join('\n');
-                messages.push(parseMessage(blockText));
+                messages.push(hasMeta(blockText) ? parseMessage(blockText) : createPlaceholder());
                 current = [];
             }
-            started = true;
-            continue; // do not include boundary line in block
+            continue; // skip boundary line
         }
-        if (started) current.push(line);
+        current.push(line);
     }
-    if (started && current.length) {
+    // Do not append a trailing placeholder after the last boundary; only flush if it has metadata
+    if (current.length) {
         const blockText = current.join('\n');
-        messages.push(parseMessage(blockText));
+        if (hasMeta(blockText)) messages.push(parseMessage(blockText));
     }
     return messages;
 }
