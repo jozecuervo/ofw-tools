@@ -104,6 +104,9 @@ Pass arguments after `--`.
 - **Purpose**: Compute Separate Property (SP) and Community Property (CP) interests using the Moore/Marsden worksheet with clear intermediate values and percentages.
 - **Config**: Provide inputs via `source_files/moore-marsden.config.json` (gitignored) or pass `--config <path>`. If no config is provided, neutral defaults are used.
 - **Output**: Console worksheet (lines 1–13). Optionally emit a JSON worksheet via `--out-json`.
+- **Notes**:
+  - Community share of appreciation during marriage is computed as (community principal reduction ÷ original purchase price) × (FMV at division − FMV at marriage).
+  - Only principal reduction counts toward this ratio; do not include interest, taxes, insurance, or routine maintenance.
 - **Run**:
   ```bash
   # With defaults (illustrative numbers)

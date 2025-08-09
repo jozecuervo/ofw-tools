@@ -5,6 +5,17 @@
  * - Compute Separate Property (SP) and Community Property (CP) interests for a residence
  *   using the Moore/Marsden approach with a clear, worksheet-style output.
  *
+ * Legal background (California)
+ * - In re Marriage of Moore (1980) 28 Cal.3d 366
+ * - In re Marriage of Marsden (1982) 130 Cal.App.3d 426
+ * - Family Code §§ 760 (community property), 770 (separate property), 2640 (SP reimbursements)
+ *
+ * Core rule
+ * - Community share of appreciation during marriage = (CP principal reduction ÷ purchase price) × appreciation during marriage.
+ * - SP interest consists of: down payment + SP principal reduction + pre‑marital appreciation + SP share of appreciation.
+ * - CP interest consists of: CP principal reduction + CP share of appreciation.
+ * - Only principal reduction counts. Interest, taxes, insurance, and routine maintenance are excluded from the Moore/Marsden ratio.
+ *
  * CLI
  * - node moore-marsden.js [--config <path-to-json>] [--out-json <path>]
  *   --config: Provide inputs via JSON; otherwise the tool will look for
@@ -23,8 +34,16 @@ function subtractLine4FromLine6(fairMarketAtMarriage, fairMarketAtDivision) {
     return fairMarketAtDivision - fairMarketAtMarriage;
 }
 
-function divideLine5ByTotalPrincipal(paymentsWithCommunityFunds, paymentsWithSeparateFunds, downPayment) {
-    return paymentsWithCommunityFunds / (paymentsWithCommunityFunds + paymentsWithSeparateFunds + downPayment);
+/**
+ * Per Moore/Marsden: community proportion of appreciation is CP principal reduction ÷ purchase price.
+ * See Moore, 28 Cal.3d at 371–372 (community acquires a pro tanto interest proportionate to the community's
+ * reduction of principal) and Marsden, 130 Cal.App.3d at 436–437 (community share of appreciation during marriage).
+ * @param {number} paymentsWithCommunityFunds - Total CP principal reduction during marriage
+ * @param {number} purchasePrice - Original purchase price
+ * @returns {number} proportion in [0,1]
+ */
+function computeCommunityProportion(paymentsWithCommunityFunds, purchasePrice) {
+    return paymentsWithCommunityFunds / purchasePrice;
 }
 
 function multiplyLine8ByLine9(line8Result, line9Result) {
@@ -61,7 +80,7 @@ function calculateCPInterest(communityPayments, line10Result) {
 function computeMooreMarsden(purchasePrice, downPayment, paymentsWithSeparateFunds, fairMarketAtMarriage, paymentsWithCommunityFunds, fairMarketAtDivision) {
     const line7Result = subtractLine1FromLine4(purchasePrice, fairMarketAtMarriage); // Appreciation before marriage
     const line8Result = subtractLine4FromLine6(fairMarketAtMarriage, fairMarketAtDivision); // Appreciation during marriage
-    const line9Result = divideLine5ByTotalPrincipal(paymentsWithCommunityFunds, paymentsWithSeparateFunds, downPayment); // Community % of total principal
+    const line9Result = computeCommunityProportion(paymentsWithCommunityFunds, purchasePrice); // Community % of purchase price
     const line10Result = multiplyLine8ByLine9(line8Result, line9Result); // Community share of appreciation
     const line11Result = subtractLine10FromLine8(line8Result, line10Result); // Separate share of appreciation
     const spInterest = calculateSPInterest(downPayment, paymentsWithSeparateFunds, line7Result, line11Result);
@@ -86,7 +105,7 @@ function calculateMooreMarsden(purchasePrice, downPayment, paymentsWithSeparateF
     console.log(`---------------------------------------------------------------`);
     console.log(`7. Appreciation before marriage:                ${currencyFormatter.format(line7Result)}`);
     console.log(`8. Appreciation during marriage:                ${currencyFormatter.format(line8Result)}`);
-    console.log(`9. Proportion of community payments:            ${percentageFormatter.format(line9Result)}`);
+    console.log(`9. Proportion of community payments (CP/Purchase Price): ${percentageFormatter.format(line9Result)}`);
     console.log(`10. Community share of appreciation:            ${currencyFormatter.format(line10Result)}`);
     console.log(`11. Separate property share of appreciation:    ${currencyFormatter.format(line11Result)}`);
     console.log(`---------------------------------------------------------------`);
