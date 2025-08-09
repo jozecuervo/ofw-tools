@@ -1,3 +1,44 @@
+/**
+ * Fifth-Week Counter (Court-Style Definition)
+ *
+ * Purpose
+ * - Quantify how often a month has a "5th week" under common family court definitions
+ *   of weekly visitation schedules.
+ *
+ * Definition
+ * - Week 1 is the first calendar week that contains the specified anchor weekday(s)
+ *   (for example, Friday and/or Saturday).
+ * - A month is said to have a "5th week" when that month contains 5 occurrences of the anchor weekday.
+ *   (Example: a month with 5 Fridays qualifies as having a 5th week when Friday is the anchor.)
+ *
+ * Defaults
+ * - Start year: current year
+ * - End year: start year + 18
+ * - Anchor weekdays: Friday (5) and Saturday (6)
+ * - Output includes: all 5th-occurence dates, per-year counts, and a summary
+ *
+ * CLI (pass flags after `--` when using npm scripts)
+ * - --start <year>         Start year (inclusive). Default: current year
+ * - --end <year>           End year (inclusive). Default: start + 18
+ * - --weekday <0-6|csv>   Anchor weekday ordinal(s). 0=Sun ... 6=Sat. Example: --weekday 5,6
+ * - --anchor <names>      Anchor weekday name(s). Example: --anchor Friday or --anchor Friday,Saturday
+ * - --list                Print each date that represents the 5th occurrence (on by default)
+ * - --per-year            Print a yearly count summary (on by default)
+ * - -h, --help            Show usage help
+ *
+ * Usage Examples
+ *   node nth-week.js
+ *   node nth-week.js --start 2024 --end 2030 --anchor Friday
+ *   node nth-week.js --weekday 3 --start 2024 --end 2026
+ */
+/**
+ * Compute and optionally print the 5th occurrence dates for a given year and anchor weekday.
+ *
+ * @param {number} year - Four-digit year (e.g., 2025).
+ * @param {number} startDayOrdinal - Anchor weekday ordinal (0=Sun ... 6=Sat).
+ * @param {{ verboseDates?: boolean, perYear?: boolean }} [options]
+ * @returns {number} The number of months in the given year that contain a 5th occurrence.
+ */
 function findFifthWeeks(year, startDayOrdinal, options = { verboseDates: false, perYear: false }) {
     const fifthWeeksStartDates = [];
 
@@ -28,6 +69,15 @@ function findFifthWeeks(year, startDayOrdinal, options = { verboseDates: false, 
     return fifthWeeksStartDates.length;
 }
 
+/**
+ * Tally months with a 5th occurrence across a year range.
+ *
+ * @param {number} startYear - Inclusive start year.
+ * @param {number} endYear - Inclusive end year.
+ * @param {number} startDayOrdinal - Anchor weekday ordinal (0=Sun ... 6=Sat).
+ * @param {{ verboseDates?: boolean, perYear?: boolean }} [options]
+ * @returns {number} Total count of months in the range that have a 5th occurrence.
+ */
 function tallyFifthWeeks(startYear, endYear, startDayOrdinal, options = { verboseDates: false, perYear: false }) {
     let totalFifthWeeks = 0;
 
@@ -38,10 +88,23 @@ function tallyFifthWeeks(startYear, endYear, startDayOrdinal, options = { verbos
     return totalFifthWeeks;
 }
 
+/**
+ * Return the number of days in a given month/year.
+ * @param {number} year
+ * @param {number} monthIndex - Zero-based month index (0=Jan ... 11=Dec)
+ * @returns {number}
+ */
 function daysInMonth(year, monthIndex) {
     return new Date(year, monthIndex + 1, 0).getDate();
 }
 
+/**
+ * Determine if a month contains a 5th occurrence of a given weekday.
+ * @param {number} year
+ * @param {number} monthIndex - Zero-based month index (0=Jan ... 11=Dec)
+ * @param {number} weekdayOrdinal - Anchor weekday (0=Sun ... 6=Sat)
+ * @returns {boolean}
+ */
 function hasFifthOccurrence(year, monthIndex, weekdayOrdinal) {
     const firstDay = new Date(year, monthIndex, 1).getDay();
     const firstOccurDate = 1 + ((weekdayOrdinal - firstDay + 7) % 7);
@@ -49,6 +112,13 @@ function hasFifthOccurrence(year, monthIndex, weekdayOrdinal) {
     return count >= 5;
 }
 
+/**
+ * Compute the set of months (and yearly counts) that have a 5th occurrence.
+ * @param {number} startYear
+ * @param {number} endYear
+ * @param {number} weekdayOrdinal
+ * @returns {{ monthsSet: Set<string>, perYear: Record<number,number>, total: number }}
+ */
 function computeMonthsWithFifth(startYear, endYear, weekdayOrdinal) {
     const monthsSet = new Set(); // keys like YYYY-MM
     const perYear = {};
@@ -65,10 +135,17 @@ function computeMonthsWithFifth(startYear, endYear, weekdayOrdinal) {
     return { monthsSet, perYear, total: Array.from(monthsSet).length };
 }
 
+/**
+ * Print CLI usage help to stdout.
+ */
 function printHelp() {
     console.log(`\nUsage: node nth-week.js [--start <year>] [--end <year>] [--weekday <0-6|csv>] [--list]\n\nOptions:\n  --start     Start year (default: current year)\n  --end       End year inclusive (default: start + 18)\n  --weekday   Weekday ordinal 0=Sun ... 6=Sat or CSV of ordinals (default: 5,6)\n  --list      Print each 5th-occurrence date found (verbose)\n  -h, --help  Show this help\n`);
 }
 
+/**
+ * Raw CLI arguments (excluding `node` and script path).
+ * @type {string[]}
+ */
 const args = process.argv.slice(2);
 if (args.includes('-h') || args.includes('--help')) {
     printHelp();
