@@ -33,7 +33,7 @@ Pass arguments after `--`.
 ### 1) OFW PDF Analyzer (`index.js`)
 
 - **Purpose**: Parse an Our Family Wizard Messages PDF and compute weekly stats per person: messages sent/read, average read time, total words, and sentiment. Outputs JSON, Markdown to console, and CSV.
-- **Input**: Path to an OFW messages PDF (export with full pages per message).
+- **Input**: Path to an OFW messages PDF (export with full pages per message). Supports both legacy (metadata after body) and new (metadata at head; values on next line) formats.
 - **Output**:
   - `same-directory/<basename>.json` (parsed messages)
   - `same-directory/<basename>.csv` (weekly stats)
@@ -42,9 +42,16 @@ Pass arguments after `--`.
   ```bash
   npm run ofw:analyze -- /absolute/path/to/OFW_Messages_Report_2025-03-04.pdf
   ```
+- **Options**:
+  - `--no-markdown`: Skip writing per-message Markdown file
+  - `--no-csv`: Skip writing weekly CSV
+  - `--exclude <csv>`: Hide names containing any of the given substrings (case-insensitive) in printed tables
+- **Display**:
+  - “To:” pseudo-rows (recipient read-time buckets) are hidden in tables but still used for read-time stats.
+  - Avg sentiment prints 0.00 when no messages were sent for that row/week.
+  - Page banners and footers are excluded from message bodies.
 
 ### 2) Rapid-Fire Message Clusters (`message-volume.js`)
-
 - **Purpose**: From the JSON produced by the OFW PDF Analyzer, find clusters of back-to-back messages within a time threshold (default 30 minutes) for a given sender.
 - **Defaults**: Looks for sender "José Hernandez" and prints clusters of 3+ messages.
 - **Input**: Path to the JSON file (e.g., `OFW_Messages_Report_2025-03-04_12-04-15.json`).
@@ -53,56 +60,92 @@ Pass arguments after `--`.
   ```bash
   npm run ofw:clusters -- /absolute/path/to/OFW_Messages_Report_2025-03-04_12-04-15.json
   ```
-- **Note**: To analyze a different sender or change the threshold, edit `message-volume.js` variables: `senderName` and `thresholdSeconds`.
+- **Flags**:
+  - `--sender "Name"` (default: "José Hernandez")
+  - `--threshold-min <minutes>` (default: 30)
+  - `--min-messages <n>` (default: 3)
 
 ### 3) Visitation Calendar Helper (`visitation-cal.js`)
 
-- **Purpose**: Print weekly schedule details for a given month following a pattern: 1st/3rd Wednesday in-person visits; 2nd/4th (and 5th when present) Wednesday Zoom; weekend visits on 2nd and 4th weeks.
+- **Purpose**: Court-style month view where Week 1 is the first calendar week (Sun–Sat) containing the anchor weekday (default: Friday). Labels Wednesday activities (1st/3rd Visit, 2nd/4th Zoom) and weekend visits (2nd/4th).
 - **Input**: Year and month (numeric).
-- **Output**: Console list of week ranges and visit/Zoom/weekend details. Optionally includes a month grid (disabled by default).
+- **Output**: Console list of week ranges with Wednesday/Weekend details; optional ASCII calendar grid with annotations (V: visit, Z: zoom).
 - **Run**:
   ```bash
   npm run visitation -- 2024 4
+  npm run visitation -- 2024 4 -- --anchor Saturday   # anchor Week 1 on Saturdays
+  npm run visitation -- 2024 4 -- --grid              # include annotated calendar grid
   ```
 
 ### 4) Fifth-Week Counter (`nth-week.js`)
 
-- **Purpose**: Count months that contain a 5th occurrence of a weekday in a given range (example prints Friday and Saturday counts for 2024–2035).
+- **Purpose**: Quantify how often a month has a “5th week” under common court-style definitions.
+  - Definition used: Week 1 is the first week that contains the anchor day(s) (e.g., Friday/Saturday). A month has a “5th week” if it contains 5 such anchor days in that month.
+- **Defaults**: Counts Friday (5) and Saturday (6) for current year through current year + 18. Prints all dates and a per-year summary by default.
 - **Run**:
   ```bash
   npm run nth-week
   ```
-- **Note**: Adjust the years and weekday ordinals in `nth-week.js` if you need different ranges.
+- **Options** (optional; pass flags after `--` with npm):
+  - `--start <year>` and `--end <year>`: Year range (inclusive). Defaults: start = current year; end = start + 18.
+  - `--weekday <0-6|csv>`: Weekday ordinal(s) (0=Sun … 6=Sat)
+  - `--anchor <name[,name]>`: Named weekday(s), e.g. `Friday` or `Friday,Saturday`
+  - `--list`: Print each 5th-occurrence date (on by default)
+  - `--per-year`: Show a yearly summary (on by default)
+- **Examples**:
+  ```bash
+  npm run nth-week
+  npm run nth-week -- --start 2024 --end 2026 --anchor Friday
+  npm run nth-week -- --weekday 3 --start 2024 --end 2025
+  ```
 
 ### 5) iMessage Parser with Sentiment (`imessage.js`)
 
-- **Purpose**: Parse a text export of iMessage conversations, perform sentiment analysis, and write per-year JSON files.
+- **Purpose**: Parse a text export of iMessage conversations, perform sentiment analysis, and emit per-year JSON files.
 - **Input**: Path to a text export (lines grouped as timestamp → sender → content).
-- **Output**: `output_<year>.json` files written next to the script.
+- **Output**: `output/imessage-export-<year>.json` by default (directory is gitignored). Override with `--out-dir`.
 - **Run**:
   ```bash
   npm run imessage -- /absolute/path/to/imessage.txt
+  npm run imessage -- /absolute/path/to/imessage.txt -- --out-dir ./custom_output
   ```
-- **Note**: The script currently uses sensible defaults and example path; passing a file path via CLI is recommended.
+ - **Notes**: Uses `sentiment`, `natural`, and `polarity` libraries. Tests mock `polarity` for Jest compatibility.
 
 ### 6) Moore/Marsden Calculator (`moore-marsden.js`)
 
-- **Purpose**: Compute Separate Property (SP) and Community Property (CP) interests per Moore/Marsden. Prints a worksheet with intermediate values and percentages.
-- **Input**: Example numbers are embedded; edit the call at the bottom of `moore-marsden.js` to use your case values.
+- **Purpose**: Compute Separate Property (SP) and Community Property (CP) interests using the Moore/Marsden worksheet with clear intermediate values and percentages.
+- **Config**: Provide inputs via `source_files/moore-marsden.config.json` (gitignored) or pass `--config <path>`. If no config is provided, neutral defaults are used.
+- **Output**: Console worksheet (lines 1–13). Optionally emit a JSON worksheet via `--out-json`.
+- **Notes**:
+  - Community share of appreciation during marriage is computed as (community principal reduction ÷ original purchase price) × (FMV at division − FMV at marriage).
+  - Only principal reduction counts toward this ratio; do not include interest, taxes, insurance, or routine maintenance.
+- **Options**:
+  - `--summary`: print only the SP/CP interests (hide lines 1–11)
+  - `--no-explain`: hide the explanatory header and citations
 - **Run**:
   ```bash
+  # With defaults (illustrative numbers)
   npm run moore-marsden
+
+  # With your local config (gitignored by default) and JSON output
+  npm run moore-marsden -- --config ./source_files/moore-marsden.config.json --out-json ./output/moore-marsden.json
   ```
+ - **Citations**: Moore, Marsden; Family Code §§ 760, 770, 2640.
 
 ### 7) Apportionment & Buyout with Credits (`apportionment-calc.js`)
 
 - **Purpose**: Pro-rata apportionment of equity (separate vs. community) and illustrative buyout calculations incorporating Watts (use) credits, Epstein reimbursements, and attorney fees.
-- **Input**: Example numbers are embedded; edit the constants near the top of `apportionment-calc.js` to match your facts.
-- **Output**: Console breakdown and the computed buyout amounts.
+- **Config**: You can supply a local config at `source_files/apportionment.config.json` (gitignored) or pass `--config <path>`.
+- **Output**: Console breakdown and computed buyout; optional machine-readable JSON via `--out-json`.
 - **Run**:
   ```bash
+  # With defaults (illustrative numbers)
   npm run apportionment
+
+  # With your local config (gitignored by default) and JSON output
+  npm run apportionment -- --config ./source_files/apportionment.config.json --out-json ./output/apportionment.json
   ```
+ - **Notes**: Neutral, even-number example defaults to illustrate formulas. Future enhancement: toggles for Epstein-only vs. equity allocation and FRV offsets.
 
 ---
 
@@ -115,7 +158,7 @@ Pass arguments after `--`.
 
 ## Notes and Limitations
 
-- The OFW parser expects the standard PDF export format and may break if OFW changes formatting.
+- The OFW parser supports multiple OFW export layouts; if OFW changes formatting again, please open an issue with a sample.
 - Sentiment analysis is heuristic and should be treated as supportive, not dispositive.
 - Several scripts contain example inputs; update those inline for your case as needed.
 
