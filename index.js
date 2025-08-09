@@ -200,6 +200,8 @@ function processMessages(text) {
 module.exports = {
     // parseMessage is intentionally not exported to keep surface small
     __processMessages: processMessages,
+    __parseMessage: parseMessage,
+    parsePdfFile,
 };
 
 /**
@@ -496,37 +498,39 @@ function printHelp() {
     console.log(`\nUsage: node index.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--exclude <csv>]\n\nOptions:\n  --no-markdown           Skip writing the per-message Markdown file\n  --no-csv                Skip writing the weekly CSV summary\n  --exclude <csv>         Comma-separated substrings to hide in printed tables (case-insensitive)\n  -h, --help              Show this help\n`);
 }
 
-const rawArgs = process.argv.slice(2);
-if (rawArgs.includes('-h') || rawArgs.includes('--help')) {
-    printHelp();
-    process.exit(0);
-}
-if (rawArgs.length === 0) {
-    printHelp();
-    process.exit(1);
-}
-
-const INPUT_FILE_PATH = rawArgs[0];
-const flags = {
-    writeMarkdown: !rawArgs.includes('--no-markdown'),
-    writeCsv: !rawArgs.includes('--no-csv'),
-    excludePatterns: [],
-};
-
-// Parse --exclude <csv>
-const excludeIdx = rawArgs.indexOf('--exclude');
-if (excludeIdx !== -1) {
-    const value = rawArgs[excludeIdx + 1] || '';
-    if (value && !value.startsWith('--')) {
-        flags.excludePatterns = value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+if (require.main === module) {
+    const rawArgs = process.argv.slice(2);
+    if (rawArgs.includes('-h') || rawArgs.includes('--help')) {
+        printHelp();
+        process.exit(0);
     }
-}
+    if (rawArgs.length === 0) {
+        printHelp();
+        process.exit(1);
+    }
 
-// Entry Point
-parsePdfFile(INPUT_FILE_PATH)
-    .then(writeJsonFile)
-    .then(data => flags.writeMarkdown ? writeMarkDownFile(data) : data)
-    .then(data => compileAndOutputStats(data, { writeCsv: flags.writeCsv, excludePatterns: flags.excludePatterns }))
-    .catch(error => {
-        console.error('Error:', error);
-    });
+    const INPUT_FILE_PATH = rawArgs[0];
+    const flags = {
+        writeMarkdown: !rawArgs.includes('--no-markdown'),
+        writeCsv: !rawArgs.includes('--no-csv'),
+        excludePatterns: [],
+    };
+
+    // Parse --exclude <csv>
+    const excludeIdx = rawArgs.indexOf('--exclude');
+    if (excludeIdx !== -1) {
+        const value = rawArgs[excludeIdx + 1] || '';
+        if (value && !value.startsWith('--')) {
+            flags.excludePatterns = value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        }
+    }
+
+    // Entry Point
+    parsePdfFile(INPUT_FILE_PATH)
+        .then(writeJsonFile)
+        .then(data => flags.writeMarkdown ? writeMarkDownFile(data) : data)
+        .then(data => compileAndOutputStats(data, { writeCsv: flags.writeCsv, excludePatterns: flags.excludePatterns }))
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
