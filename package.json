@@ -4,7 +4,7 @@
   "description": "Divorce-related tools: OFW PDF analysis, visitation helpers, and property division calculators",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"No tests yet\" && exit 0",
+    "test": "jest",
     "ofw:analyze": "node index.js",
     "ofw:clusters": "node message-volume.js",
     "visitation": "node visitation-cal.js",
@@ -21,5 +21,8 @@
     "pdf-parse": "^1.1.1",
     "polarity": "^4.0.1",
     "sentiment": "^5.0.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }
