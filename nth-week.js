@@ -38,6 +38,33 @@ function tallyFifthWeeks(startYear, endYear, startDayOrdinal, options = { verbos
     return totalFifthWeeks;
 }
 
+function daysInMonth(year, monthIndex) {
+    return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function hasFifthOccurrence(year, monthIndex, weekdayOrdinal) {
+    const firstDay = new Date(year, monthIndex, 1).getDay();
+    const firstOccurDate = 1 + ((weekdayOrdinal - firstDay + 7) % 7);
+    const count = Math.floor((daysInMonth(year, monthIndex) - firstOccurDate) / 7) + 1;
+    return count >= 5;
+}
+
+function computeMonthsWithFifth(startYear, endYear, weekdayOrdinal) {
+    const monthsSet = new Set(); // keys like YYYY-MM
+    const perYear = {};
+    for (let y = startYear; y <= endYear; y++) {
+        let c = 0;
+        for (let m = 0; m < 12; m++) {
+            if (hasFifthOccurrence(y, m, weekdayOrdinal)) {
+                monthsSet.add(`${y}-${String(m + 1).padStart(2, '0')}`);
+                c++;
+            }
+        }
+        perYear[y] = c;
+    }
+    return { monthsSet, perYear, total: Array.from(monthsSet).length };
+}
+
 function printHelp() {
     console.log(`\nUsage: node nth-week.js [--start <year>] [--end <year>] [--weekday <0-6|csv>] [--list]\n\nOptions:\n  --start     Start year (default: current year)\n  --end       End year inclusive (default: start + 18)\n  --weekday   Weekday ordinal 0=Sun ... 6=Sat or CSV of ordinals (default: 5,6)\n  --list      Print each 5th-occurrence date found (verbose)\n  -h, --help  Show this help\n`);
 }
@@ -92,7 +119,19 @@ console.log(`Definition: Week 1 is the first week that contains a ${weekdays.len
 console.log('Showing dates and per-year summary.');
 
 weekdays.forEach(wd => {
-    const total = tallyFifthWeeks(start, end, wd, { verboseDates, perYear });
     const name = weekdayNames[wd];
+    const total = tallyFifthWeeks(start, end, wd, { verboseDates, perYear });
+    const { total: distinctMonths, perYear: perYearCounts } = computeMonthsWithFifth(start, end, wd);
+    const yearSpan = end - start + 1;
+    const avgPerYear = distinctMonths / yearSpan;
+    const medianPerYear = (() => {
+        const arr = Object.values(perYearCounts).sort((a,b)=>a-b);
+        const mid = Math.floor(arr.length / 2);
+        return arr.length % 2 ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
+    })();
+    const minPerYear = Math.min(...Object.values(perYearCounts));
+    const maxPerYear = Math.max(...Object.values(perYearCounts));
+
     console.log(`${name} (${wd}) → Months with a 5th week (first week contains ${name}): ${total} (between ${start} and ${end}).`);
+    console.log(`Summary for ${name}: total months=${distinctMonths}, years=${yearSpan}, avg/year=${avgPerYear.toFixed(2)}, median/year=${medianPerYear}, min/year=${minPerYear}, max/year=${maxPerYear}`);
 });
