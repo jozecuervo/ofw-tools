@@ -12,5 +12,6 @@ description: Overarching instructions for AI assistance in this repo
 - For divorce-related workflows, use [`divorce-navigator.md`](./prompts/divorce-navigator.md) and supporting snippets:
   - [`communication-templates.md`](./prompt-snippets/communication-templates.md)
   - [`document-checklists.md`](./prompt-snippets/document-checklists.md)
+  - [`workflow-guardrails.md`](./prompt-snippets/workflow-guardrails.md)
 
 

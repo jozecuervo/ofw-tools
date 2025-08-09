@@ -30,4 +30,9 @@ applyTo: "**/__tests__/**/*.{js,ts}"
 - Always add a corresponding `CHANGELOG.md` entry (version, date, bullets).
 - Keep commits small and scoped to a single functional change.
 
+## Workflow Guardrails
+
+- Ask the repository owner for approval before committing and before pushing.
+- Provide a summary of edits and the exact commands you intend to run.
+
 
