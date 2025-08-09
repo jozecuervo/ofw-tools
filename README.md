@@ -107,6 +107,9 @@ Pass arguments after `--`.
 - **Notes**:
   - Community share of appreciation during marriage is computed as (community principal reduction ÷ original purchase price) × (FMV at division − FMV at marriage).
   - Only principal reduction counts toward this ratio; do not include interest, taxes, insurance, or routine maintenance.
+- **Options**:
+  - `--summary`: print only the SP/CP interests (hide lines 1–11)
+  - `--no-explain`: hide the explanatory header and citations
 - **Run**:
   ```bash
   # With defaults (illustrative numbers)

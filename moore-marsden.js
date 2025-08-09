@@ -118,7 +118,10 @@ function printHelp() {
 }
 
 const argv = process.argv.slice(2);
-if (argv.includes('-h') || argv.includes('--help')) {
+const showHelp = argv.includes('-h') || argv.includes('--help');
+const summaryOnly = argv.includes('--summary');
+const noExplain = argv.includes('--no-explain');
+if (showHelp) {
     printHelp();
     process.exit(0);
 }
@@ -160,7 +163,7 @@ const defaults = {
 const input = { ...defaults, ...config };
 
 // Run the calculation and optionally emit JSON
-calculateMooreMarsden(
+const worksheet = computeMooreMarsden(
     input.purchasePrice,
     input.downPayment,
     input.paymentsWithSeparateFunds,
@@ -169,19 +172,53 @@ calculateMooreMarsden(
     input.fairMarketAtDivision
 );
 
+function printHeader() {
+    if (noExplain) return;
+    console.log('\nMoore/Marsden Worksheet (California)');
+    console.log('Community share of appreciation during marriage = (CP principal reduction ÷ purchase price) × appreciation during marriage.');
+    console.log('Only principal reduction counts; do not include interest, taxes, insurance, or routine maintenance.');
+    console.log('References: Moore (28 Cal.3d 366), Marsden (130 Cal.App.3d 426), Fam. Code §§ 760, 770, 2640');
+    console.log('');
+}
+
+function printWorksheet() {
+    const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    const percentageFormatter = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 2 });
+    console.log(`1. Purchase price:                              ${currencyFormatter.format(input.purchasePrice)}`);
+    console.log(`2. Down payment:                                ${currencyFormatter.format(input.downPayment)}`);
+    console.log(`3. Principal payments made with separate funds: ${currencyFormatter.format(input.paymentsWithSeparateFunds)}`);
+    console.log(`4. Fair Market Value at Date of Marriage:       ${currencyFormatter.format(input.fairMarketAtMarriage)}`);
+    console.log(`5. Principal payments with community funds:     ${currencyFormatter.format(input.paymentsWithCommunityFunds)}`);
+    console.log(`6. Fair Market Value at Date of Division:       ${currencyFormatter.format(input.fairMarketAtDivision)}`);
+    console.log(`---------------------------------------------------------------`);
+    console.log(`7. Appreciation before marriage:                ${currencyFormatter.format(worksheet.line7Result)}`);
+    console.log(`8. Appreciation during marriage:                ${currencyFormatter.format(worksheet.line8Result)}`);
+    console.log(`9. Proportion of community payments (CP/Purchase Price): ${percentageFormatter.format(worksheet.line9Result)}`);
+    console.log(`10. Community share of appreciation:            ${currencyFormatter.format(worksheet.line10Result)}`);
+    console.log(`11. Separate property share of appreciation:    ${currencyFormatter.format(worksheet.line11Result)}`);
+    console.log(`---------------------------------------------------------------`);
+}
+
+function printSummary() {
+    const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    console.log(`12. Separate Property Interest (SP Interest):   ${currencyFormatter.format(worksheet.spInterest)}`);
+    console.log(`13. Community Property Interest (CP Interest):  ${currencyFormatter.format(worksheet.cpInterest)}\n`);
+    if (worksheet.line9Result > 1) {
+        console.warn('Warning: CP proportion exceeds 100%. Check inputs for purchase price and principal amounts.');
+    }
+}
+
+printHeader();
+if (!summaryOnly) {
+    printWorksheet();
+}
+printSummary();
+
 const outIdx = argv.indexOf('--out-json');
 if (outIdx !== -1 && argv[outIdx + 1]) {
-    const res = computeMooreMarsden(
-        input.purchasePrice,
-        input.downPayment,
-        input.paymentsWithSeparateFunds,
-        input.fairMarketAtMarriage,
-        input.paymentsWithCommunityFunds,
-        input.fairMarketAtDivision
-    );
     const outPath = argv[outIdx + 1];
     try {
-        fs.writeFileSync(outPath, JSON.stringify({ inputs: input, worksheet: res }, null, 2));
+        fs.writeFileSync(outPath, JSON.stringify({ inputs: input, worksheet }, null, 2));
         console.log(`\nWrote worksheet JSON to ${outPath}`);
     } catch (e) {
         console.error('Failed to write --out-json file:', e.message);
