@@ -1,3 +1,6 @@
+# Temporary AI-generated prompt artifacts
+prompts/temp-*
+
 source_files/moore-marsden.config.json
 source_files/apportionment.config.json
 output/

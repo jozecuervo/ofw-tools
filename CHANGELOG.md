@@ -1,3 +1,22 @@
+## 1.2.0 - 2025-08-09
+
+### Added
+- AI prompt structure under `.github/prompts/` and `.github/prompt-snippets/` with core prompts:
+  - `general-coding.md`, `unit-testing.md`, `code-review.md`, `js-cli-tools.md`, `ofw-parsing.md`
+- Divorce Navigator persona (`divorce-navigator.md`) and supporting snippets:
+  - `communication-templates.md`, `document-checklists.md`
+- Legal review prompt (`legal-review.md`) and escalation checklist (`legal-escalation-checklist.md`)
+- Workflow guardrails requiring owner approval before commit/push
+- PR template and versioning/changelog snippet
+- Prompt feedback issue template and continuous-improvement guidelines
+- Capability Map in `.github/copilot-instructions.md`
+- Front-matter validator script (`scripts/validate-prompts.js`) and `npm run prompts:validate`
+- `PROMPTS_LICENSE.md` clarifying prompt content licensing
+
+### Changed
+- Streamlined and de-duplicated prompts to reduce verbosity and token cost
+- Updated `README.md` with AI Tooling section and prompts license link
+- Updated `CONTRIBUTING.md` and `copilot-instructions.md` to reflect repo rules and navigation
 ## Changelog
 
 All notable changes to this project will be documented in this file.
@@ -84,4 +103,76 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - iMessage parser with sentiment analysis (`imessage.js`) – initial ESM version grouping messages by year.
 - Project scaffolding: `package.json`, dependencies, and initial `README.md`.
 
+
+## [0.9.0] - 2024-04-08
+
+### Added
+- Fifth-week utilities: tally months with a 5th occurrence of a weekday over a range.
+
+### Changed
+- Documentation improvements around fifth-week calculations and usage.
+
+## [0.8.0] - 2024-04-03
+
+### Added
+- Visitation calendar calculator with ASCII rendering.
+
+### Changed
+- Output formatting and headers for clarity.
+
+## [0.7.0] - 2024-02-14
+
+### Added
+- Formatted Markdown output containing all messages.
+- Summary lines for totals/averages in Markdown output.
+
+### Changed
+- Message template cleanup; merged improvements from PRs #1 and #2.
+
+## [0.6.1] - 2023-12-31
+
+### Changed
+- Revert Markdown view-time units back to minutes for consistency.
+
+## [0.6.0] - 2023-11-26
+
+### Added
+- iMessage parser with sentiment (polarity), writing per-year JSON files.
+
+### Changed
+- Flattened sentiment scores into message objects; computed average sentiment.
+- Output sentiment with consistent formatting.
+
+## [0.5.0] - 2023-11-16
+
+### Added
+- Word count calculation for messages; included in Markdown table and CSV output.
+- README with initial usage instructions.
+
+### Changed
+- Output both total and average view times in Markdown.
+- Sort persons by name before output for stable ordering.
+
+## [0.4.0] - 2023-11-04
+
+### Fixed
+- Message body parsing bug (page 2+ truncation and body joins).
+
+### Changed
+- Cleaned up Markdown table output and formatting.
+
+## [0.3.0] - 2023-10-18
+
+### Added
+- CSV export enabled by default.
+- CLI accepts input file path and derives output directory/name.
+
+### Changed
+- Added JSDoc and error handling to parsing functions.
+
+## [0.1.0] - 2023-10-17
+
+### Added
+- Initial commit of `ofw-tools` with OFW message parsing basics.
+- `.gitignore` and initial CSV/Markdown output pipeline.
 

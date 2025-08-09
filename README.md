@@ -165,3 +165,19 @@ Pass arguments after `--`.
 ## License
 
 This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License. To view a copy of this license, visit `http://creativecommons.org/licenses/by-nc-nd/4.0/` or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+
+---
+
+## AI Tooling
+
+This repo is equipped with AI prompt files for enhanced development.
+
+- Location: `.github/prompts/` and `.github/prompt-snippets/`.
+- Usage: Copy prompts into your AI tool (e.g., GitHub Copilot Chat, Claude, Cursor) or reference them directly.
+- Examples: See individual `.md` files for task-specific guidance.
+
+You can also use these prompts to guide code generation, reviews, and testing tasks. If you have a generator tool, you may export repo-wide context to a file such as `prompts/entire-codebase.md` and keep temporary artifacts ignored by Git.
+
+### Licensing
+
+Prompts are governed by `PROMPTS_LICENSE.md` and may differ from the code license.

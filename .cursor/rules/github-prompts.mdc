@@ -1,0 +1,5 @@
+---
+description: Load the repo’s AI guidance index; defer details to linked prompts.
+alwaysApply: true
+---
+Use `.github/copilot-instructions.md` as the primary index for prompts/snippets.
