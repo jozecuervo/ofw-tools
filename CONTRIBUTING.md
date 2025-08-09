@@ -35,4 +35,9 @@ applyTo: "**/__tests__/**/*.{js,ts}"
 - Ask the repository owner for approval before committing and before pushing.
 - Provide a summary of edits and the exact commands you intend to run.
 
+## Continuous Improvement of Prompts
+
+- Use the "Prompt Feedback" issue template to capture outcomes and ideas.
+- Follow `.github/prompt-snippets/continuous-improvement.md` for cadence and safety.
+
 

@@ -14,5 +14,6 @@ description: Overarching instructions for AI assistance in this repo
   - [`document-checklists.md`](./prompt-snippets/document-checklists.md)
   - [`workflow-guardrails.md`](./prompt-snippets/workflow-guardrails.md)
   - Legal review: [`legal-review.md`](./prompts/legal-review.md), [`legal-escalation-checklist.md`](./prompt-snippets/legal-escalation-checklist.md)
+- Continuous improvement: follow [`continuous-improvement.md`](./prompt-snippets/continuous-improvement.md) and use the "Prompt Feedback" issue template.
 
 
