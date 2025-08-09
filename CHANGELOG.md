@@ -1,6 +1,22 @@
 ## 1.2.0 - 2025-08-09
-- feat: add IDE-agnostic AI prompts, Divorce Navigator persona, templates, and checklists
-- docs: add AI Tooling section, contributing rules for prompts, versioning, and changelog
+
+### Added
+- AI prompt structure under `.github/prompts/` and `.github/prompt-snippets/` with core prompts:
+  - `general-coding.md`, `unit-testing.md`, `code-review.md`, `js-cli-tools.md`, `ofw-parsing.md`
+- Divorce Navigator persona (`divorce-navigator.md`) and supporting snippets:
+  - `communication-templates.md`, `document-checklists.md`
+- Legal review prompt (`legal-review.md`) and escalation checklist (`legal-escalation-checklist.md`)
+- Workflow guardrails requiring owner approval before commit/push
+- PR template and versioning/changelog snippet
+- Prompt feedback issue template and continuous-improvement guidelines
+- Capability Map in `.github/copilot-instructions.md`
+- Front-matter validator script (`scripts/validate-prompts.js`) and `npm run prompts:validate`
+- `PROMPTS_LICENSE.md` clarifying prompt content licensing
+
+### Changed
+- Streamlined and de-duplicated prompts to reduce verbosity and token cost
+- Updated `README.md` with AI Tooling section and prompts license link
+- Updated `CONTRIBUTING.md` and `copilot-instructions.md` to reflect repo rules and navigation
 ## Changelog
 
 All notable changes to this project will be documented in this file.
