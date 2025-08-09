@@ -1,3 +1,23 @@
+/**
+ * Our Family Wizard (OFW) PDF Analyzer
+ *
+ * Purpose
+ * - Parse an OFW Messages PDF export and extract messages with metadata (sent date, sender,
+ *   recipients and first-view times, subject, body), compute word counts and sentiment, and
+ *   produce weekly statistics and console-friendly Markdown/CSV summaries.
+ *
+ * Pipeline
+ * 1) parsePdfFile: read PDF → text
+ * 2) processMessages: split text by "Message N of M" → parseMessage for each block
+ * 3) writeJsonFile: persist parsed messages alongside the PDF basename
+ * 4) writeMarkDownFile: write a per-message Markdown file (optional)
+ * 5) compileAndOutputStats: compute per-week/person stats; write CSV (optional); print Markdown tables
+ *
+ * CLI
+ * - node index.js <path-to-ofw-pdf> [--no-markdown] [--no-csv]
+ *   --no-markdown: skip writing per-message Markdown file
+ *   --no-csv: skip writing weekly CSV summary
+ */
 const path = require('path');
 
 const Sentiment = require('sentiment');
@@ -15,7 +35,12 @@ const {
 } = require('./utils');
 
 /**
- * Inner function to parse individual messages and extract metadata.
+ * Parse a single OFW message block into a message object.
+ *
+ * Expected format
+ * - Lines in order: 'Sent:' then the sent datetime line; 'From:' line with sender; 'To:' line(s) with
+ *   recipients annotated like "Name (First Viewed: <datetime|Never>)"; 'Subject:' followed by body lines.
+ *
  * @param {string} messageBlock - The text block representing a single message.
  * @return {Object} - An object containing message data and calculated read times.
  */
@@ -143,10 +168,9 @@ async function parsePdfFile(inputFilePath) {
 }
 
 /**
- * Writes the provided messages data to a JSON file in the specified directory, using the base file name.
- *
- * @param {Object} data - The data object containing messages, directory, and base file name.
- * @returns {Promise<Object>} - A promise that resolves to the data object for further processing.
+ * Write parsed messages to a JSON file next to the input PDF.
+ * @param {{ messages:Array<object>, directory:string, fileNameWithoutExt:string }} data
+ * @returns {Promise<typeof data>}
  */
 function writeJsonFile(data) {
     return new Promise((resolve, reject) => {
@@ -187,6 +211,11 @@ ${body}
 `};
 
 
+/**
+ * Write a per-message Markdown file next to the input PDF.
+ * @param {{ messages:Array<object>, directory:string, fileNameWithoutExt:string }} data
+ * @returns {Promise<typeof data>}
+ */
 function writeMarkDownFile(data) {
     return new Promise((resolve, reject) => {
         try {
@@ -207,9 +236,9 @@ function writeMarkDownFile(data) {
 }
 
 /**
- * Outputs the provided message statistics to the console in a single Markdown table.
- *
- * @param {Object} stats - The message statistics object.
+ * Print totals and weekly statistics as Markdown tables to console.
+ * @param {Record<string, any>} totals - Aggregate per-person totals
+ * @param {Record<string, Record<string, any>>} stats - Per-week per-person stats
  */
 function outputMarkdownSummary(totals, stats) {
     console.log('\n');
