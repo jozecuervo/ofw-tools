@@ -1,0 +1,27 @@
+# Contributing
+
+Thank you for contributing to `ofw-tools`!
+
+## Development
+
+- Use Node via `nvm` (`source ~/.nvm/nvm.sh && nvm use`).
+- Install deps with `npm install` (no yarn.lock present).
+- Run tests with `npm test`.
+
+## AI Prompt Contributions
+
+- Place task-specific prompts in `.github/prompts/` and reusable snippets in `.github/prompt-snippets/`.
+- Use Markdown with YAML front matter including `description` and, optionally, `applyTo` globs.
+- Test prompts with at least two AI models when possible.
+- Submit PRs targeting the `ai-tooling-setup` branch or a dedicated feature branch.
+
+Example front matter:
+
+```yaml
+---
+description: Generate unit tests using Arrange-Act-Assert with Jest
+applyTo: "**/__tests__/**/*.{js,ts}"
+---
+```
+
+
