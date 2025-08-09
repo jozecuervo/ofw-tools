@@ -11,6 +11,11 @@ applyTo: ["index.js", "message-volume.js"]
 - Normalize names and handle pseudo-rows like "To:" carefully.
 - For clusters: parameterize sender, threshold minutes, and minimum message count.
 
+### Divorce Navigator Alignment
+
+- When summarizing or drafting exhibits, produce attorney-ready bullets with dates, counts, and concrete references to `output/` files.
+- Maintain neutral tone suitable for court; avoid speculative language.
+
 ### Edge Cases to Cover
 
 - Pages with wrapped metadata and values on next line.
