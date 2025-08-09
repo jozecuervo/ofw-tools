@@ -42,95 +42,89 @@ const {
  *   recipients annotated like "Name (First Viewed: <datetime|Never>)"; 'Subject:' followed by body lines.
  *
  * @param {string} messageBlock - The text block representing a single message.
- * @return {Object} - An object containing message data and calculated read times.
+ * @returns {{
+ *   sentDate: Date,
+ *   sender: string,
+ *   recipientReadTimes: Record<string, Date|'Never'>,
+ *   subject: string,
+ *   body: string,
+ *   wordCount: number,
+ *   sentiment: number,
+ *   sentiment_natural: number,
+ * }} Parsed message with derived metrics
  */
 function parseMessage(messageBlock) {
+    const message = { body: '', wordCount: 0, recipientReadTimes: {} };
 
-    // Initialize message object
-    const message = {
-        body: '',
-        wordCount: 0,
-        recipientReadTimes: {}
-    };
+    // Normalize lines
+    function normalize(raw) {
+        return String(raw)
+            .replace(/\u00A0/g, ' ')
+            .replace(/\u200E|\u200F/g, '')
+            .replace(/\uFF1A/g, ':')
+            .trim();
+    }
+    const lines = messageBlock.split('\n').map(normalize);
+    const metaRegex = /^(Sent|From|To|Subject)\s*:\s*(.*)$/i;
 
-    // Split the message block into lines
-    const lines = messageBlock.trim().split('\n');
-    
-    let inBody = false;
-    let bodyLines = [];
-    let currentMetadataField = null;
-    
-    // Process each line to extract metadata
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        
-        // Skip empty lines
-        if (!line) continue;
-        
-        // Check if we've reached the message body
-        if (inBody) {
-            bodyLines.push(line);
-            continue;
-        }
-        
-        // Process metadata fields
-        if (line === 'Sent:') {
-            currentMetadataField = 'sent';
-        } else if (line === 'From:') {
-            currentMetadataField = 'from';
-        } else if (line === 'To:') {
-            currentMetadataField = 'to';
-        } else if (line === 'Subject:') {
-            currentMetadataField = 'subject';
-        } else if (currentMetadataField === 'sent' && line) {
-            message.sentDate = parseDate(line);
-            currentMetadataField = null;
-        } else if (currentMetadataField === 'from' && line) {
-            message.sender = line;
-            currentMetadataField = null;
-        } else if (currentMetadataField === 'to' && line) {
-            const recipientMatch = line.match(/(.+?)\(First Viewed: (.+?)\)/);
-            if (recipientMatch) {
-                const recipient = recipientMatch[1].trim();
-                const firstViewed = recipientMatch[2].trim();
+    // Find last occurrence of each metadata key scanning from bottom
+    let subjectIdx = -1, toIdx = -1, fromIdx = -1, sentIdx = -1;
+    for (let i = lines.length - 1; i >= 0; i--) {
+        const m = lines[i].match(metaRegex);
+        if (!m) continue;
+        const key = m[1].toLowerCase();
+        const val = (m[2] || '').trim();
+        if (subjectIdx === -1 && key === 'subject') { subjectIdx = i; message.subject = val || 'No subject'; }
+        else if (toIdx === -1 && key === 'to') { toIdx = i; }
+        else if (fromIdx === -1 && key === 'from') { fromIdx = i; message.sender = val; }
+        else if (sentIdx === -1 && key === 'sent') { sentIdx = i; if (val) message.sentDate = parseDate(val); }
+    }
+
+    // Parse To continuation until next metadata/header line
+    if (toIdx !== -1) {
+        const end = subjectIdx !== -1 ? subjectIdx : lines.length;
+        for (let j = toIdx; j < end; j++) {
+            const line = lines[j];
+            const m = line.match(metaRegex);
+            if (m && m[1].toLowerCase() !== 'to') break;
+            const fv = line.match(/(.+?)\(First Viewed: (.+?)\)/);
+            if (fv) {
+                const recipient = fv[1].trim();
+                const firstViewed = fv[2].trim();
                 message.recipientReadTimes[recipient] = firstViewed !== 'Never' ? parseDate(firstViewed) : 'Never';
             }
-            // Stay in 'to' field as there might be multiple recipients
-        } else if (currentMetadataField === 'subject' && line) {
-            message.subject = line;
-            currentMetadataField = null;
-            inBody = true; // Next non-empty line starts the body
         }
     }
-    
+
+    // If sent date missing inline, try next line after Sent:
+    if (!message.sentDate && sentIdx !== -1 && lines[sentIdx + 1]) {
+        message.sentDate = parseDate(lines[sentIdx + 1]);
+    }
+
+    // Body = everything before first metadata occurrence
+    const firstMetaIdx = [subjectIdx, toIdx, fromIdx, sentIdx].filter(i => i !== -1).sort((a,b)=>a-b)[0];
+    const bodyEnd = firstMetaIdx !== undefined ? firstMetaIdx : lines.length;
+    const bodyLines = lines.slice(0, bodyEnd).filter(l => !metaRegex.test(l) && l && !/^Page \d+ of \d+/i.test(l));
     message.body = bodyLines.join('\n').trim();
-    
-    // Calculate word count
     message.wordCount = message.body ? message.body.split(/\s+/).filter(Boolean).length : 0;
 
-    // Perform sentiment analysis on the message body
+    // Sentiment metrics
     if (message.body) {
-        const sentimentResult = analyzer.getSentiment(message.body.split(/\s+/));
-        message.sentiment_natural = sentimentResult;
+        message.sentiment_natural = analyzer.getSentiment(message.body.split(/\s+/));
+        message.sentiment = sentiment.analyze(message.body).score;
     } else {
         message.sentiment_natural = 0;
-    }
-
-    // Perform sentiment analysis on the message body using the sentiment library
-    if (message.body) {
-        const sentimentResult = sentiment.analyze(message.body);
-        message.sentiment = sentimentResult.score;
-    } else {
         message.sentiment = 0;
     }
-
+    if (!message.sender) message.sender = 'Unknown';
+    if (!message.subject) message.subject = 'No subject';
     return message;
 }
 
 /**
- * Outer function to iterate through all messages in the PDF text.
- * @param {string} text - The text extracted from the PDF.
- * @return {Array} - An array of message objects with extracted and calculated data.
+ * Convert OFW PDF text into an array of messages.
+ * @param {string} text - Full text extracted from the PDF.
+ * @returns {Array<object>} messages
  */
 function processMessages(text) {
     const messages = [];
@@ -144,13 +138,16 @@ function processMessages(text) {
     return messages;
 }
 
+// Expose selected internals for testing if needed
+module.exports = {
+    // parseMessage is intentionally not exported to keep surface small
+    __processMessages: processMessages,
+};
+
 /**
- * Parses the provided PDF file and processes the messages contained within it.
- *
- * @param {string} inputFilePath - The path to the input PDF file.
- * @returns {Promise<Object>} - A promise that resolves to an object containing
- * the processed messages, the directory of the input file, and the base file name
- * without extension.
+ * Read a PDF file and parse messages.
+ * @param {string} inputFilePath - Absolute or relative path to an OFW messages PDF
+ * @returns {Promise<{ messages: Array<object>, directory: string, fileNameWithoutExt: string }>} Data bundle
  */
 async function parsePdfFile(inputFilePath) {
     try {
@@ -240,7 +237,14 @@ function writeMarkDownFile(data) {
  * @param {Record<string, any>} totals - Aggregate per-person totals
  * @param {Record<string, Record<string, any>>} stats - Per-week per-person stats
  */
-function outputMarkdownSummary(totals, stats) {
+function outputMarkdownSummary(totals, stats, options = {}) {
+    const excludePatterns = Array.isArray(options.excludePatterns) ? options.excludePatterns : [];
+    const shouldHide = (name) => {
+        if (!name || name === 'undefined') return true;
+        if (/^\s*To:/i.test(name)) return true; // hide recipient pseudo-rows by default
+        const lower = name.toLowerCase();
+        return excludePatterns.some(p => p && lower.includes(p));
+    };
     console.log('\n');
     // Output the totals to Markdown
     let header = '| Name             | Sent | Words | View Time | Avg View Time | Avg. Sentiment | Sentiment ntrl |';
@@ -249,10 +253,7 @@ function outputMarkdownSummary(totals, stats) {
     let separator = '|------------------|------|-------|-----------|---------------|----------------|----------------|';
     console.log(separator);
     for (const [person, personTotals] of Object.entries(totals)) {
-        // Skip undefined entries or specific people
-        if (!person || person === 'undefined' || person.includes('Marie') || person.includes('Nora') || person.includes('Henry') || person.includes('Megan')) {
-            continue;
-        }
+        if (shouldHide(person)) continue;
         const paddedName = person.padEnd(16);
         const paddedSent = personTotals.messagesSent.toString().padStart(5);
         const paddedTotalTime = (personTotals.totalReadTime).toFixed(1).toString().padStart(10);
@@ -274,10 +275,7 @@ function outputMarkdownSummary(totals, stats) {
     for (const [week, weekStats] of Object.entries(stats)) {
         console.log(separator);
         for (const [person, personStats] of Object.entries(weekStats)) {
-            // Skip undefined entries or specific people
-            if (!person || person === 'undefined' || person.includes('Marie') || person.includes('Nora') || person.includes('Henry')) {
-                continue;
-            }
+            if (shouldHide(person)) continue;
             const paddedWeek = (previousWeek !== week ? week : '').padEnd(21);
             const paddedName = person.padEnd(16);
             const paddedSent = personStats.messagesSent.toString().padStart(5);
@@ -296,13 +294,15 @@ function outputMarkdownSummary(totals, stats) {
 
 
 /**
- * Generates a CSV string from the provided message statistics object,
- * and writes this string to a CSV file at the provided file path.
- *
- * @param {Object} stats - The message statistics object.
- * @param {string} filePath - The path to the output CSV file.
+ * Write weekly stats to CSV.
+ * @param {Record<string, Record<string, any>>} stats
+ * @param {string|null} filePath - Destination CSV path (null disables write)
  */
 function outputCSV(stats, filePath) {
+    if (!filePath) {
+        console.log('CSV output disabled.');
+        return;
+    }
     let csvOutput = 'Week,Name,Messages Sent,Messages Read,Average Read Time (minutes),Total Words, Sentiment, Sentiment_natural\n';
     for (const [week, weekStats] of Object.entries(stats)) {
         for (const [person, personStats] of Object.entries(weekStats)) {
@@ -315,10 +315,11 @@ function outputCSV(stats, filePath) {
 }
 
 /**
- * Compiles and outputs message statistics based on the array of messages.
- * @param {Array} messages - The array of message objects.
+ * Compile weekly statistics and render console/CSV outputs.
+ * @param {{ messages:Array<object>, directory:string, fileNameWithoutExt:string }} bundle
+ * @param {{ writeCsv?: boolean }} options
  */
-function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
+function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, options = { writeCsv: true, excludePatterns: [] }) {
     const stats = {};
     const totals = {};
 
@@ -327,7 +328,7 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
         // Skip messages with undefined senders
         if (!message.sender) {
             console.warn('Found message with undefined sender:', message.subject || 'No subject');
-            return;
+            message.sender = 'Unknown';
         }
         
         const sender = message.sender;
@@ -398,16 +399,18 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
                 }
                 stats[weekString][recipient].messagesRead++;
                 totals[recipient].messagesRead++;
-                stats[weekString][recipient].totalReadTime += readTime;
-                totals[recipient].totalReadTime += readTime;
+                if (!Number.isNaN(readTime) && Number.isFinite(readTime) && readTime >= 0) {
+                    stats[weekString][recipient].totalReadTime += readTime;
+                    totals[recipient].totalReadTime += readTime;
+                }
             }
         }
     });
 
     // Calculate total average read time and sentiment for each person
     Object.entries(totals).forEach(([sender, total]) => {
-        totals[sender].averageReadTime = totals[sender].totalReadTime / totals[sender].messagesRead;
-        totals[sender].avgSentiment = totals[sender].sentiment / totals[sender].messagesSent;
+        totals[sender].averageReadTime = total.messagesRead === 0 ? 0 : total.totalReadTime / total.messagesRead;
+        totals[sender].avgSentiment = total.messagesSent === 0 ? 0 : total.sentiment / total.messagesSent;
     });
     
     // Calculate weekly average read time ans sentiment for each person in each week
@@ -422,23 +425,47 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }) {
         }
     }
     // Output the statistics to Markdown (console) and CSV (file)
-    const csvFilePath = path.join(directory, `${fileNameWithoutExt}.csv`);
+    const csvFilePath = options.writeCsv && directory && fileNameWithoutExt ? path.join(directory, `${fileNameWithoutExt}.csv`) : null;
     outputCSV(stats, csvFilePath);
-    outputMarkdownSummary(totals, stats);
+    outputMarkdownSummary(totals, stats, { excludePatterns: options.excludePatterns });
 }
 
 
-const INPUT_FILE_PATH = process.argv[2];
-if (!INPUT_FILE_PATH) {
-    console.error('No input file path provided');
+function printHelp() {
+    console.log(`\nUsage: node index.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--exclude <csv>]\n\nOptions:\n  --no-markdown           Skip writing the per-message Markdown file\n  --no-csv                Skip writing the weekly CSV summary\n  --exclude <csv>         Comma-separated substrings to hide in printed tables (case-insensitive)\n  -h, --help              Show this help\n`);
+}
+
+const rawArgs = process.argv.slice(2);
+if (rawArgs.includes('-h') || rawArgs.includes('--help')) {
+    printHelp();
+    process.exit(0);
+}
+if (rawArgs.length === 0) {
+    printHelp();
     process.exit(1);
+}
+
+const INPUT_FILE_PATH = rawArgs[0];
+const flags = {
+    writeMarkdown: !rawArgs.includes('--no-markdown'),
+    writeCsv: !rawArgs.includes('--no-csv'),
+    excludePatterns: [],
+};
+
+// Parse --exclude <csv>
+const excludeIdx = rawArgs.indexOf('--exclude');
+if (excludeIdx !== -1) {
+    const value = rawArgs[excludeIdx + 1] || '';
+    if (value && !value.startsWith('--')) {
+        flags.excludePatterns = value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    }
 }
 
 // Entry Point
 parsePdfFile(INPUT_FILE_PATH)
     .then(writeJsonFile)
-    .then(writeMarkDownFile)
-    .then(compileAndOutputStats)
+    .then(data => flags.writeMarkdown ? writeMarkDownFile(data) : data)
+    .then(data => compileAndOutputStats(data, { writeCsv: flags.writeCsv, excludePatterns: flags.excludePatterns }))
     .catch(error => {
         console.error('Error:', error);
     });
