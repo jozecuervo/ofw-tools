@@ -1,70 +1,124 @@
-# Our Family Wizard Message Analysis Tool
+## OFW Tools: Divorce and Communication Analysis Toolkit
 
-## Description
+### Overview
 
-This tool is specifically designed to analyze communication records from Our Family Wizard (OFW), a co-parenting application. It extracts and processes messages from a PDF file downloaded from the OFW platform, providing insights into messaging dynamics. The tool analyzes the number of messages sent and read, average read time, and the total word count for each sender. The results are outputted in Markdown format to the console, as a CSV file, and as an intermediate JSON file for detailed analysis.
+This repository contains a set of small, focused tools that help analyze communications, plan visitation schedules, and perform basic family-law-related calculations (Moore/Marsden, apportionment). These are optimized for quick, local use as you prepare materials for court.
 
-## Features
+### Quick Start
 
-- Specifically designed for PDFs downloaded from Our Family Wizard.
-- Analyzes messages for sent count, read count, average read time, and word count.
-- Outputs data in Markdown format, as a CSV file, and as an intermediate JSON file.
+- **Requirements**: Node.js (use your local `nvm` setup)
+- **Install**:
+  ```bash
+  cd ~/projects/ofw-tools
+  source ~/.nvm/nvm.sh && nvm use
+  npm install
+  ```
 
-## Requirements
+### Run Commands (npm scripts)
 
-- Node.js
-- Additional Node.js packages (list any packages that need to be installed, if any)
+Pass arguments after `--`.
 
-## Installation
+- Analyze OFW PDF: `npm run ofw:analyze -- /absolute/path/to/OFW_Messages_Report.pdf`
+- Rapid-fire clusters from JSON: `npm run ofw:clusters -- /absolute/path/to/OFW_Messages_Report.json`
+- Visitation calendar (YYYY MM): `npm run visitation -- 2024 4`
+- Fifth-week counter (built-in examples): `npm run nth-week`
+- Moore/Marsden calculation (example values): `npm run moore-marsden`
+- Apportionment & buyout calculator (example values): `npm run apportionment`
+- iMessage parser with sentiment: `npm run imessage -- /absolute/path/to/imessage.txt`
 
-1. Clone the repository or download the source code.
-2. Navigate to the project directory.
-3. Install required Node.js packages (if any).
+---
 
-   ```bash
-   npm install
-   ```
+## Tools
 
-## Usage
+### 1) OFW PDF Analyzer (`index.js`)
 
-### Step 1: Download PDF from Our Family Wizard
+- **Purpose**: Parse an Our Family Wizard Messages PDF and compute weekly stats per person: messages sent/read, average read time, total words, and sentiment. Outputs JSON, Markdown to console, and CSV.
+- **Input**: Path to an OFW messages PDF (export with full pages per message).
+- **Output**:
+  - `same-directory/<basename>.json` (parsed messages)
+  - `same-directory/<basename>.csv` (weekly stats)
+  - Markdown tables printed to console
+- **Run**:
+  ```bash
+  npm run ofw:analyze -- /absolute/path/to/OFW_Messages_Report_2025-03-04.pdf
+  ```
 
-Before using this tool, you need to download your message records as a PDF file from the Our Family Wizard website:
+### 2) Rapid-Fire Message Clusters (`message-volume.js`)
 
-1. Log in to your OFW account.
-2. Navigate to the appropriate section to access messages.
-3. Download your messages as a PDF file. Use full pages per message for the best results.
+- **Purpose**: From the JSON produced by the OFW PDF Analyzer, find clusters of back-to-back messages within a time threshold (default 30 minutes) for a given sender.
+- **Defaults**: Looks for sender "José Hernandez" and prints clusters of 3+ messages.
+- **Input**: Path to the JSON file (e.g., `OFW_Messages_Report_2025-03-04_12-04-15.json`).
+- **Output**: Console summary lines and a compact ASCII visualization.
+- **Run**:
+  ```bash
+  npm run ofw:clusters -- /absolute/path/to/OFW_Messages_Report_2025-03-04_12-04-15.json
+  ```
+- **Note**: To analyze a different sender or change the threshold, edit `message-volume.js` variables: `senderName` and `thresholdSeconds`.
 
-### Step 2: Run the Analysis Tool
+### 3) Visitation Calendar Helper (`visitation-cal.js`)
 
-1. Place the downloaded OFW PDF file in an accessible directory.
-2. Run the script from the command line, providing the path to the PDF file as an argument.
+- **Purpose**: Print weekly schedule details for a given month following a pattern: 1st/3rd Wednesday in-person visits; 2nd/4th (and 5th when present) Wednesday Zoom; weekend visits on 2nd and 4th weeks.
+- **Input**: Year and month (numeric).
+- **Output**: Console list of week ranges and visit/Zoom/weekend details. Optionally includes a month grid (disabled by default).
+- **Run**:
+  ```bash
+  npm run visitation -- 2024 4
+  ```
 
-   ```bash
-   node index.js [path_to_ofw_pdf_file]
-   ```
+### 4) Fifth-Week Counter (`nth-week.js`)
 
-   Replace `[path_to_ofw_pdf_file]` with the path to your OFW PDF file.
+- **Purpose**: Count months that contain a 5th occurrence of a weekday in a given range (example prints Friday and Saturday counts for 2024–2035).
+- **Run**:
+  ```bash
+  npm run nth-week
+  ```
+- **Note**: Adjust the years and weekday ordinals in `nth-week.js` if you need different ranges.
 
-3. The script processes the PDF file and outputs:
-   - A JSON file, representing the parsed message data from the PDF.
-   - A CSV file of analysis stats in the same directory as the PDF file.
-   - In the console, as a Markdown table of the same analysis.
+### 5) iMessage Parser with Sentiment (`imessage.js`)
 
-## Output
+- **Purpose**: Parse a text export of iMessage conversations, perform sentiment analysis, and write per-year JSON files.
+- **Input**: Path to a text export (lines grouped as timestamp → sender → content).
+- **Output**: `output_<year>.json` files written next to the script.
+- **Run**:
+  ```bash
+  npm run imessage -- /absolute/path/to/imessage.txt
+  ```
+- **Note**: The script currently uses sensible defaults and example path; passing a file path via CLI is recommended.
 
-- **Markdown Table**: Displayed in the console, it includes weekly statistics for each user, with details on messages sent, messages read, average read time, and word count (for senders).
-- **CSV File**: Provides the same data as the Markdown table and can be imported into spreadsheet software for further analysis.
-- **JSON File**: An intermediate file containing the parsed message data, useful for custom analyses or integration with other tools.
+### 6) Moore/Marsden Calculator (`moore-marsden.js`)
 
-## Example
+- **Purpose**: Compute Separate Property (SP) and Community Property (CP) interests per Moore/Marsden. Prints a worksheet with intermediate values and percentages.
+- **Input**: Example numbers are embedded; edit the call at the bottom of `moore-marsden.js` to use your case values.
+- **Run**:
+  ```bash
+  npm run moore-marsden
+  ```
 
-```bash
-node index.js ~/Downloads/OFW_Messages_Report_.pdf
-```
+### 7) Apportionment & Buyout with Credits (`apportionment-calc.js`)
 
-This command will process the `OFW_Messages_Report_.pdf` file and output the results as described.
+- **Purpose**: Pro-rata apportionment of equity (separate vs. community) and illustrative buyout calculations incorporating Watts (use) credits, Epstein reimbursements, and attorney fees.
+- **Input**: Example numbers are embedded; edit the constants near the top of `apportionment-calc.js` to match your facts.
+- **Output**: Console breakdown and the computed buyout amounts.
+- **Run**:
+  ```bash
+  npm run apportionment
+  ```
+
+---
+
+## Data Flow and Typical Usage
+
+1) Export OFW Messages as PDF → run `ofw:analyze` → get `<basename>.json` and `<basename>.csv`.
+2) Optionally analyze rapid-fire clusters with `ofw:clusters` using the JSON from step 1.
+3) Prepare calendar visuals/evidence with `visitation` or `nth-week`.
+4) Run `moore-marsden` and/or `apportionment` with your numbers for property division exhibits.
+
+## Notes and Limitations
+
+- The OFW parser expects the standard PDF export format and may break if OFW changes formatting.
+- Sentiment analysis is heuristic and should be treated as supportive, not dispositive.
+- Several scripts contain example inputs; update those inline for your case as needed.
 
 ## License
 
-This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License. To view a copy of this license, visit `http://creativecommons.org/licenses/by-nc-nd/4.0/` or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
