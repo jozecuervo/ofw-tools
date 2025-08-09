@@ -1,6 +1,6 @@
 {
   "name": "ofw-tools",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Divorce-related tools: OFW PDF analysis, visitation helpers, and property division calculators",
   "main": "index.js",
   "scripts": {

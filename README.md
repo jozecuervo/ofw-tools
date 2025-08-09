@@ -56,12 +56,14 @@ Pass arguments after `--`.
 
 ### 3) Visitation Calendar Helper (`visitation-cal.js`)
 
-- **Purpose**: Print weekly schedule details for a given month following a pattern: 1st/3rd Wednesday in-person visits; 2nd/4th (and 5th when present) Wednesday Zoom; weekend visits on 2nd and 4th weeks.
+- **Purpose**: Court-style month view where Week 1 is the first calendar week (Sun–Sat) containing the anchor weekday (default: Friday). Labels Wednesday activities (1st/3rd Visit, 2nd/4th Zoom) and weekend visits (2nd/4th).
 - **Input**: Year and month (numeric).
-- **Output**: Console list of week ranges and visit/Zoom/weekend details. Optionally includes a month grid (disabled by default).
+- **Output**: Console list of week ranges with Wednesday/Weekend details; optional ASCII calendar grid with annotations (V: visit, Z: zoom).
 - **Run**:
   ```bash
   npm run visitation -- 2024 4
+  npm run visitation -- 2024 4 -- --anchor Saturday   # anchor Week 1 on Saturdays
+  npm run visitation -- 2024 4 -- --grid              # include annotated calendar grid
   ```
 
 ### 4) Fifth-Week Counter (`nth-week.js`)

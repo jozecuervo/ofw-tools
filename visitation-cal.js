@@ -1,41 +1,76 @@
-// Configuration for visitation intervals
+/**
+ * Visitation Calendar Helper
+ *
+ * Purpose
+ * - Generate a month view in court-style terms where "Week 1" is the first calendar week
+ *   (Sun–Sat) that contains the anchor weekday (default: Friday).
+ * - Label Wednesday activities per a common pattern: 1st/3rd in-person visit; 2nd/4th Zoom;
+ *   and weekend visits on 2nd/4th weeks.
+ *
+ * CLI
+ * - node visitation-cal.js <year> <month> [--grid] [--anchor <weekday>]
+ *   - --anchor accepts names (Friday, Saturday, etc.). Default: Friday
+ *   - --grid prints an ASCII calendar grid annotated with V (visit), Z (Zoom)
+ */
+
+// Configuration for visitation intervals (0-indexed weeks relative to Week 1)
 const VISITATION_CONFIG = {
     WEEKS_PER_MONTH: 5,
-    ZOOM_WEEKS: [2, 4], // 0-indexed weeks for Zoom visits
-    VISIT_WEEKS: [1, 3], // 0-indexed weeks for in-person visits
-    WEEKEND_VISIT_WEEKS: [1, 3] // 0-indexed weeks for weekend visits
+    ZOOM_WEEKS: [1, 3], // Weeks with Wednesday Zoom (default: 2nd, 4th)
+    VISIT_WEEKS: [0, 2], // Weeks with in-person Wednesday visit (default: 1st, 3rd)
+    WEEKEND_VISIT_WEEKS: [1, 3] // Weeks with weekend visits (default: 2nd, 4th)
 };
 
-// This function calculates the first Friday of a given month
-function getFirstFridayOfMonth(year, month) {
-    // Create a new date object for the first day of the month
+const weekdayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const nameToOrdinal = {
+    sunday: 0, sun: 0,
+    monday: 1, mon: 1,
+    tuesday: 2, tue: 2, tues: 2,
+    wednesday: 3, wed: 3,
+    thursday: 4, thu: 4, thurs: 4,
+    friday: 5, fri: 5,
+    saturday: 6, sat: 6,
+};
+
+/**
+ * Get the first occurrence of the anchor weekday in a month.
+ * @param {number} year - Four-digit year
+ * @param {number} month - 1-based (1=Jan ... 12=Dec)
+ * @param {number} anchorOrdinal - 0=Sun ... 6=Sat
+ * @returns {Date}
+ */
+function getFirstAnchorOfMonth(year, month, anchorOrdinal) {
     let date = new Date(year, month - 1, 1);
-    // Loop until the day of the week is Friday (5)
-    while (date.getDay() !== 5) {
-        // Increment the date by one day
+    while (date.getDay() !== anchorOrdinal) {
         date.setDate(date.getDate() + 1);
     }
-    // Log the first Friday
     return date;
 }
 
-// This function calculates the start date of the first week of a given month
-function getFirstWeekStart(year, month) {
-    // Get the first Friday of the month
-    let firstFriday = getFirstFridayOfMonth(year, month);
-    // console.log(`First Friday of the month: ${firstFriday.toDateString()}`);
-    // Create a new date object for the first week start
-    let firstWeekStart = new Date(firstFriday);
-    // Subtract the day of the week from the date to get the start of the week
-    firstWeekStart.setDate(firstFriday.getDate() - firstFriday.getDay());
-    // Log the first week start
+/**
+ * Calculate the start (Sunday) of Week 1 (first week containing the anchor weekday).
+ * @param {number} year - Four-digit year
+ * @param {number} month - 1-based
+ * @param {number} anchorOrdinal - 0=Sun ... 6=Sat
+ * @returns {Date}
+ */
+function getFirstWeekStart(year, month, anchorOrdinal) {
+    const firstAnchor = getFirstAnchorOfMonth(year, month, anchorOrdinal);
+    const firstWeekStart = new Date(firstAnchor);
+    firstWeekStart.setDate(firstAnchor.getDate() - firstAnchor.getDay());
     return firstWeekStart;
 }
 
-// This function calculates the weeks of a given month
-function getWeeksInfo(year, month) {
+/**
+ * Calculate the 5 court weeks for a given month.
+ * @param {number} year - Four-digit year
+ * @param {number} month - 1-based
+ * @param {number} [anchorOrdinal=5] - 0=Sun ... 6=Sat (default: Friday=5)
+ * @returns {Array<{startOfWeek: Date, endOfWeek: Date, wednesday: Date, visitType: 'Visit'|'Zoom'|'None', weekendVisit: boolean}>}
+ */
+function getWeeksInfo(year, month, anchorOrdinal = 5) {
     // Get the start date of the first week
-    let firstWeekStart = getFirstWeekStart(year, month);
+    let firstWeekStart = getFirstWeekStart(year, month, anchorOrdinal);
     // Initialize an array to hold the weeks info
     let weeksInfo = [];
     // Loop for each week of the month
@@ -52,8 +87,8 @@ function getWeeksInfo(year, month) {
         wednesday.setDate(startOfWeek.getDate() + 3);
         // If the start of the week is in the next month and it's the last iteration, break the loop
         if (startOfWeek.getMonth() + 1 !== month && i === VISITATION_CONFIG.WEEKS_PER_MONTH - 1) break;
-        // Determine the type of visit for the week
-        let visitType = VISITATION_CONFIG.ZOOM_WEEKS.includes(i) ? 'Zoom' : 'Visit';
+        // Determine the type of Wednesday visit for the week
+        let visitType = VISITATION_CONFIG.ZOOM_WEEKS.includes(i) ? 'Zoom' : (VISITATION_CONFIG.VISIT_WEEKS.includes(i) ? 'Visit' : 'None');
         // Determine if there is a weekend visit
         let weekendVisit = VISITATION_CONFIG.WEEKEND_VISIT_WEEKS.includes(i);
         // Add the week info to the array
@@ -69,27 +104,50 @@ function getWeeksInfo(year, month) {
     return weeksInfo;
 }
 
-function printWeeksInfo(weeksInfo, month) {
+/**
+ * Print a human readable list of weeks, with Wednesday and weekend details.
+ * Also prints a monthly summary of counts and dates.
+ * @param {Array} weeksInfo - Output of getWeeksInfo
+ * @param {number} month - 1-based month
+ * @param {number} anchorOrdinal - 0=Sun ... 6=Sat
+ */
+function printWeeksInfo(weeksInfo, month, anchorOrdinal) {
+    const wedVisitDates = [];
+    const wedZoomDates = [];
+    const weekendDates = [];
     weeksInfo.forEach((info, index) => {
         console.log(`\nWeek ${index + 1}: ${info.startOfWeek.toDateString()} - ${info.endOfWeek.toDateString()}`);
         let friday = new Date(info.wednesday);
         friday.setDate(info.wednesday.getDate() + 2); // Friday after Wednesday
-        if ([0, 2].includes(index)) {
-            console.log(` - 1st/3rd Wed Visit: ${info.wednesday.toDateString()}`);
-        } else if ([1, 3].includes(index) || (index === 4 && friday.getMonth() + 1 === month)) {
-            console.log(` - 2nd/4th/5th Wed Zoom: ${info.wednesday.toDateString()}`);
+        if (info.visitType === 'Visit') {
+            console.log(` - Wednesday Visit: ${info.wednesday.toDateString()}`);
+            wedVisitDates.push(info.wednesday.toDateString());
+        } else if (info.visitType === 'Zoom') {
+            console.log(` - Wednesday Zoom: ${info.wednesday.toDateString()}`);
+            wedZoomDates.push(info.wednesday.toDateString());
         }
         // Add weekend visits for the second and fourth weeks
-        if (index === 1 || index === 3) {
+        if (info.weekendVisit) {
             let saturday = new Date(info.wednesday);
             saturday.setDate(saturday.getDate() + 3); // Saturday after Wednesday
             let sunday = new Date(saturday);
             sunday.setDate(saturday.getDate() + 1); // Sunday after Saturday
             console.log(` - Weekend Visit: ${saturday.toDateString()}, ${sunday.toDateString()}`);
+            weekendDates.push(`${saturday.toDateString()} / ${sunday.toDateString()}`);
         }
     });
+    console.log(`\nSummary (Anchor: ${weekdayNames[anchorOrdinal]}):`);
+    console.log(` - Wednesday Visits: ${wedVisitDates.length}${wedVisitDates.length ? ' → ' + wedVisitDates.join(', ') : ''}`);
+    console.log(` - Wednesday Zooms:  ${wedZoomDates.length}${wedZoomDates.length ? ' → ' + wedZoomDates.join(', ') : ''}`);
+    console.log(` - Weekend Visits:   ${weekendDates.length}${weekendDates.length ? ' → ' + weekendDates.join(' | ') : ''}`);
 }
 
+/**
+ * Print an ASCII calendar grid annotated with V (visit), Z (Zoom), weekend visits.
+ * @param {number} year - Four-digit year
+ * @param {number} month - 1-based month
+ * @param {Array} weeksInfo - Output of getWeeksInfo
+ */
 function printMonthCalendar(year, month, weeksInfo) {
     // Get the first day of the month
     let firstDay = new Date(year, month - 1, 1).getDay();
@@ -102,14 +160,14 @@ function printMonthCalendar(year, month, weeksInfo) {
     for (let i = 0; i < 6; i++) {
         let weekendVisit = '';
         let week = Math.floor((day + firstDay - 1) / 7);
-        if (week < weeksInfo.length && weeksInfo[week].weekendVisitType === 'Visit') {
+        if (week < weeksInfo.length && weeksInfo[week].weekendVisit) {
             weekendVisit = 'V';
         }
         for (let j = (i === 0 ? firstDay : 0); j < 7 && day <= daysInMonth; j++) {
             // Check if the day is a Wednesday and if there is a visit or Zoom
             let visit = '';
             if (j === 3 && week < weeksInfo.length) {
-                visit = weeksInfo[week].visitType === 'Zoom' ? 'Z' : 'V';
+                visit = weeksInfo[week].visitType === 'Zoom' ? 'Z' : (weeksInfo[week].visitType === 'Visit' ? 'V' : ' ');
             }
             // Add the day to the calendar
             calendar[i][j] = [` ${day < 10 ? ' ' : ''}${day++} `, `  ${j === 5 || j === 6 ? weekendVisit : ''}${visit}  `];
@@ -132,20 +190,55 @@ function printMonthCalendar(year, month, weeksInfo) {
     }
 }
 
-// Get the year and month from the command line arguments
-const year = parseInt(process.argv[2]);
-const month = parseInt(process.argv[3]);
-
-// Check if the year and month are valid
-if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
-    console.error('Please provide a valid year and month as command line arguments.');
-    process.exit(1);
+/**
+ * Print CLI usage help.
+ */
+function printHelp() {
+    console.log(`\nUsage: node visitation-cal.js <year> <month> [--grid] [--anchor <weekday>]\n\nOptions:\n  --anchor  Anchor weekday for Week 1 (default: Friday). Accepts names like Friday/Saturday.\n  --grid    Prints a month grid in addition to the list of weeks\n  -h, --help  Show this help\n`);
 }
 
-// Get the weeks info for the given year and month
-const weeksInfo = getWeeksInfo(year, month);
-// console.log(weeksInfo);
+function runCli() {
+    const argv = process.argv.slice(2);
+    if (argv.includes('-h') || argv.includes('--help') || argv.length < 2) {
+        printHelp();
+        process.exit(argv.length < 2 ? 1 : 0);
+    }
 
-// Print the weeks info and the month calendar
-printWeeksInfo(weeksInfo, month);
-printMonthCalendar(year, month, weeksInfo);
+    // Get the year and month from the command line arguments
+    const year = parseInt(argv[0]);
+    const month = parseInt(argv[1]);
+    const showGrid = argv.includes('--grid');
+    let anchorOrdinal = 5; // Friday default
+    for (let i = 2; i < argv.length; i++) {
+        if (argv[i] === '--anchor') {
+            const name = (argv[i+1] || '').toLowerCase();
+            if (name in nameToOrdinal) {
+                anchorOrdinal = nameToOrdinal[name];
+            }
+        }
+    }
+
+    // Check if the year and month are valid
+    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
+        console.error('Please provide a valid year and month as command line arguments.');
+        process.exit(1);
+    }
+
+    // Get the weeks info for the given year and month
+    const weeksInfo = getWeeksInfo(year, month, anchorOrdinal);
+    // Print the weeks info and the month calendar
+    printWeeksInfo(weeksInfo, month, anchorOrdinal);
+    if (showGrid) {
+        printMonthCalendar(year, month, weeksInfo);
+    }
+}
+
+if (require.main === module) {
+    runCli();
+}
+
+module.exports = {
+    getFirstAnchorOfMonth,
+    getFirstWeekStart,
+    getWeeksInfo,
+};
