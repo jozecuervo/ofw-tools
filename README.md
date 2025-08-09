@@ -92,7 +92,7 @@ Pass arguments after `--`.
 
 - **Purpose**: Parse a text export of iMessage conversations, perform sentiment analysis, and emit per-year JSON files.
 - **Input**: Path to a text export (lines grouped as timestamp → sender → content).
-- **Output**: `output/output_<year>.json` by default (directory is gitignored). Override with `--out-dir`.
+- **Output**: `output/imessage-export-<year>.json` by default (directory is gitignored). Override with `--out-dir`.
 - **Run**:
   ```bash
   npm run imessage -- /absolute/path/to/imessage.txt
@@ -111,11 +111,15 @@ Pass arguments after `--`.
 ### 7) Apportionment & Buyout with Credits (`apportionment-calc.js`)
 
 - **Purpose**: Pro-rata apportionment of equity (separate vs. community) and illustrative buyout calculations incorporating Watts (use) credits, Epstein reimbursements, and attorney fees.
-- **Input**: Example numbers are embedded; edit the constants near the top of `apportionment-calc.js` to match your facts.
-- **Output**: Console breakdown and the computed buyout amounts.
+- **Config**: You can supply a local config at `source_files/apportionment.config.json` (gitignored) or pass `--config <path>`.
+- **Output**: Console breakdown and computed buyout; optional machine-readable JSON via `--out-json`.
 - **Run**:
   ```bash
+  # With defaults (illustrative numbers)
   npm run apportionment
+
+  # With your local config (gitignored by default) and JSON output
+  npm run apportionment -- --config ./source_files/apportionment.config.json --out-json ./output/apportionment.json
   ```
 
 ---

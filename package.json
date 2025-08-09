@@ -11,7 +11,7 @@
     "nth-week": "node nth-week.js",
     "moore-marsden": "node moore-marsden.js",
     "apportionment": "node apportionment-calc.js",
-    "imessage": "node --experimental-modules imessage.js"
+    "imessage": "node imessage.js"
   },
   "author": "",
   "license": "CC0-1.0",
