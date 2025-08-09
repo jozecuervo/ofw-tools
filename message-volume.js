@@ -1,29 +1,62 @@
 const fs = require('fs');
 
+function printHelp() {
+  console.log(`\nUsage: node message-volume.js <path-to-json-file> [--sender "Name"] [--threshold-min 30] [--min-messages 3]\n\nOptions:\n  --sender          Sender name to analyze (exact match). Default: "José Hernandez"\n  --threshold-min   Max minutes between consecutive messages to be in the same cluster. Default: 30\n  --min-messages    Minimum messages per cluster to include in output. Default: 3\n  -h, --help        Show this help\n`);
+}
+
+// Simple CLI args parser
+const rawArgs = process.argv.slice(2);
+if (rawArgs.includes('-h') || rawArgs.includes('--help') || rawArgs.length === 0) {
+  printHelp();
+  process.exit(rawArgs.length === 0 ? 1 : 0);
+}
+
+const filePath = rawArgs[0];
+const options = { sender: 'José Hernandez', thresholdMin: 30, minMessages: 3 };
+for (let i = 1; i < rawArgs.length; i++) {
+  if (rawArgs[i] === '--sender') options.sender = rawArgs[++i];
+  else if (rawArgs[i] === '--threshold-min') options.thresholdMin = Number(rawArgs[++i]);
+  else if (rawArgs[i] === '--min-messages') options.minMessages = Number(rawArgs[++i]);
+}
+
+if (!filePath) {
+  printHelp();
+  process.exit(1);
+}
+
 // Load and parse JSON data
-const messages = JSON.parse(fs.readFileSync('OFW_Messages_Report_2025-03-04_12-04-15.json', 'utf8'));
+const messages = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
 // Helper to parse date strings
 const parseSentDate = dateString => new Date(dateString).getTime();
 
 const formatDate = dateString => {
   const date = new Date(dateString);
-  return date.toLocaleString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
     day: 'numeric',
   });
 };
 
+const formatDate2 = dateString => {
+  const date = new Date(dateString);
+  return date.toLocaleString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric'
+  });
+};
+
+
 const formatTime = dateString => {
   const date = new Date(dateString);
-  return date.toLocaleString('en-US', { 
-    hour: '2-digit', 
+  return date.toLocaleString('en-US', {
+    hour: '2-digit',
     minute: '2-digit',
   });
 };
 
-// Analyze rapid-fire message sequences from Susan Plate
 function analyzeRapidFireMessages(messages, senderName, thresholdSeconds = 60 * 30) { // Default threshold: 30 minutes
   const senderMessages = messages
     .filter(msg => msg.sender === senderName)
@@ -55,42 +88,31 @@ function analyzeRapidFireMessages(messages, senderName, thresholdSeconds = 60 * 
   return clusters;
 }
 
-const rapidFireClusters = analyzeRapidFireMessages(messages, "Susan Plate");
-rapidFireClusters.filter(cluster => cluster.length > 2);
+const thresholdSeconds = options.thresholdMin * 60;
+let visualization = '';
+const rapidFireClusters = analyzeRapidFireMessages(messages, options.sender, thresholdSeconds)
+  .filter(cluster => cluster.length >= options.minMessages);
 
+console.log(`\nRapid-fire clusters for ${options.sender} (>=${options.minMessages} msgs, <=${options.thresholdMin} min gaps)`);
 // Output the clusters in a visually clear manner
-rapidFireClusters.forEach((cluster, idx) => {
-  let totalWords = cluster.reduce((acc, msg) => acc + msg.wordCount, 0);
-  let totalTime = (parseSentDate(cluster[cluster.length - 1].sentDate) - parseSentDate(cluster[0].sentDate)) / 1000 / 60  ;
-  let visualization = '»';
-  console.log(`\n${formatDate(cluster[0].sentDate)}: ${cluster.length} messages in ${totalTime} mins, ${totalWords} words`);
+rapidFireClusters.forEach((cluster) => {
+  const totalWords = cluster.reduce((acc, msg) => acc + (msg.wordCount || 0), 0);
+  const totalTime = (parseSentDate(cluster[cluster.length - 1].sentDate) - parseSentDate(cluster[0].sentDate)) / 1000 / 60;
+  visualization += `\n${formatDate2(cluster[0].sentDate)} »`;
+  console.log(`\n${formatDate(cluster[0].sentDate)}: ${cluster.length} messages in ${Math.round(totalTime)} mins, ${totalWords} words`);
   cluster.forEach((msg, msgIdx) => {
-    let responseTimeSeconds = 0;
-    let responseTimeMinutes = 0;
     if (msgIdx === 0) {
-      console.log(` [${formatTime(msg.sentDate)}] - ${msg.subject} `);
-      visualization += `[${msg.wordCount}w]`;
+      console.log(` [${formatTime(msg.sentDate)}] - ${msg.subject}`);
+      visualization += `[${msg.wordCount || 0}w]`;
     } else {
-      responseTimeSeconds = (parseSentDate(msg.sentDate) - parseSentDate(cluster[msgIdx - 1].sentDate)) / 1000;
-      responseTimeMinutes = responseTimeSeconds / 60;
-      console.log(` [${formatTime(msg.sentDate)}] - ${responseTimeMinutes} mins later`);
-      visualization += `${'-'.repeat(responseTimeMinutes)}[${msg.wordCount}w]`;
+      const responseTimeMinutes = (parseSentDate(msg.sentDate) - parseSentDate(cluster[msgIdx - 1].sentDate)) / 1000 / 60;
+      console.log(` [${formatTime(msg.sentDate)}] - ${Math.round(responseTimeMinutes)} mins later`);
+      const scaled = Math.min(50, Math.max(1, Math.round(responseTimeMinutes / 5))); // 1 char per ~5 min, capped
+      visualization += `${'-'.repeat(scaled)}[${msg.wordCount || 0}w]`;
     }
   });
-  console.log(visualization);
 });
-
-// Additional analysis for message volume
-const messageVolumeByDate = messages.reduce((acc, msg) => {
-  const date = msg.sentDate.split('T')[0];
-  acc[date] = (acc[date] || 0) + 1;
-  return acc;
-}, {});
-
-// Filter out days with less than 3 messages
-const highVolumeMessageDates = Object.fromEntries(
-  Object.entries(messageVolumeByDate).filter(([_, count]) => count >= 3)
-);
-
-// console.log("\nMessage volume by date:");
-// console.table(highVolumeMessageDates);
+if (rapidFireClusters.length === 0) {
+  console.log('\nNo clusters found with current settings.');
+}
+console.log(visualization);
