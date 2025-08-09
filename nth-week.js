@@ -31,62 +31,7 @@
  *   node nth-week.js --start 2024 --end 2030 --anchor Friday
  *   node nth-week.js --weekday 3 --start 2024 --end 2026
  */
-/**
- * Compute and optionally print the 5th occurrence dates for a given year and anchor weekday.
- *
- * @param {number} year - Four-digit year (e.g., 2025).
- * @param {number} startDayOrdinal - Anchor weekday ordinal (0=Sun ... 6=Sat).
- * @param {{ verboseDates?: boolean, perYear?: boolean }} [options]
- * @returns {number} The number of months in the given year that contain a 5th occurrence.
- */
-function findFifthWeeks(year, startDayOrdinal, options = { verboseDates: false, perYear: false }) {
-    const fifthWeeksStartDates = [];
-
-    for (let month = 0; month < 12; month++) { // Loop through each month
-        let date = new Date(year, month, 1); // Start at the first day of the month
-        let firstOccurrenceFound = false;
-        let weekCount = 0;
-
-        // Find the first occurrence of the specified start day in the month
-        while (month === date.getMonth()) {
-            if (date.getDay() === startDayOrdinal) {
-                weekCount++;
-                if (!firstOccurrenceFound) {
-                    firstOccurrenceFound = true;
-                } else if (weekCount === 5) {
-                    // If it's the fifth occurrence, add to the result array
-                    if (options.verboseDates) console.log(date.toISOString().substring(0, 10));
-                    fifthWeeksStartDates.push(new Date(date));
-                }
-            }
-            date.setDate(date.getDate() + 1); // Go to the next day
-        }
-    }
-
-    // Format the dates for output
-    // return fifthWeeksStartDates.map(date => date.toISOString().substring(0, 10));
-    if (options.perYear) console.log(`Year ${year}: ${fifthWeeksStartDates.length} months`);
-    return fifthWeeksStartDates.length;
-}
-
-/**
- * Tally months with a 5th occurrence across a year range.
- *
- * @param {number} startYear - Inclusive start year.
- * @param {number} endYear - Inclusive end year.
- * @param {number} startDayOrdinal - Anchor weekday ordinal (0=Sun ... 6=Sat).
- * @param {{ verboseDates?: boolean, perYear?: boolean }} [options]
- * @returns {number} Total count of months in the range that have a 5th occurrence.
- */
-function tallyFifthWeeks(startYear, endYear, startDayOrdinal, options = { verboseDates: false, perYear: false }) {
-    let totalFifthWeeks = 0;
-
-    for (let year = startYear; year <= endYear; year++) {
-        totalFifthWeeks += findFifthWeeks(year, startDayOrdinal, options);
-    }
-
-    return totalFifthWeeks;
-}
+// Pure computation helpers
 
 /**
  * Return the number of days in a given month/year.
@@ -99,17 +44,17 @@ function daysInMonth(year, monthIndex) {
 }
 
 /**
- * Determine if a month contains a 5th occurrence of a given weekday.
+ * Get the Date of the 5th occurrence of a weekday in a given month, if any.
  * @param {number} year
  * @param {number} monthIndex - Zero-based month index (0=Jan ... 11=Dec)
  * @param {number} weekdayOrdinal - Anchor weekday (0=Sun ... 6=Sat)
- * @returns {boolean}
+ * @returns {Date|null}
  */
-function hasFifthOccurrence(year, monthIndex, weekdayOrdinal) {
+function getFifthOccurrenceDate(year, monthIndex, weekdayOrdinal) {
     const firstDay = new Date(year, monthIndex, 1).getDay();
     const firstOccurDate = 1 + ((weekdayOrdinal - firstDay + 7) % 7);
-    const count = Math.floor((daysInMonth(year, monthIndex) - firstOccurDate) / 7) + 1;
-    return count >= 5;
+    const fifthDate = firstOccurDate + 28; // 4 additional weeks
+    return fifthDate <= daysInMonth(year, monthIndex) ? new Date(year, monthIndex, fifthDate) : null;
 }
 
 /**
@@ -125,14 +70,72 @@ function computeMonthsWithFifth(startYear, endYear, weekdayOrdinal) {
     for (let y = startYear; y <= endYear; y++) {
         let c = 0;
         for (let m = 0; m < 12; m++) {
-            if (hasFifthOccurrence(y, m, weekdayOrdinal)) {
-                monthsSet.add(`${y}-${String(m + 1).padStart(2, '0')}`);
-                c++;
-            }
+            const fifth = getFifthOccurrenceDate(y, m, weekdayOrdinal);
+            if (fifth) { monthsSet.add(`${y}-${String(m + 1).padStart(2, '0')}`); c++; }
         }
         perYear[y] = c;
     }
     return { monthsSet, perYear, total: Array.from(monthsSet).length };
+}
+
+/**
+ * List ISO dates for each 5th occurrence in the range.
+ * @param {number} startYear
+ * @param {number} endYear
+ * @param {number} weekdayOrdinal
+ * @returns {{ datesByYear: Record<number,string[]>, total: number }}
+ */
+function listFifthOccurrenceDates(startYear, endYear, weekdayOrdinal) {
+    const datesByYear = {};
+    let total = 0;
+    for (let y = startYear; y <= endYear; y++) {
+        const arr = [];
+        for (let m = 0; m < 12; m++) {
+            const d = getFifthOccurrenceDate(y, m, weekdayOrdinal);
+            if (d) { arr.push(d.toISOString().substring(0,10)); total++; }
+        }
+        datesByYear[y] = arr;
+    }
+    return { datesByYear, total };
+}
+
+/**
+ * Compute and optionally print the 5th occurrence dates for a given year and anchor weekday.
+ * Uses getFifthOccurrenceDate for accuracy and performance.
+ *
+ * @param {number} year - Four-digit year (e.g., 2025).
+ * @param {number} startDayOrdinal - Anchor weekday ordinal (0=Sun ... 6=Sat).
+ * @param {{ verboseDates?: boolean, perYear?: boolean }} [options]
+ * @returns {number} The number of months in the given year that contain a 5th occurrence.
+ */
+function findFifthWeeks(year, startDayOrdinal, options = { verboseDates: false, perYear: false }) {
+    let count = 0;
+    for (let month = 0; month < 12; month++) {
+        const d = getFifthOccurrenceDate(year, month, startDayOrdinal);
+        if (d) {
+            if (options.verboseDates) console.log(d.toISOString().substring(0,10));
+            count++;
+        }
+    }
+    if (options.perYear) console.log(`Year ${year}: ${count} months`);
+    return count;
+}
+
+/**
+ * Tally months with a 5th occurrence across a year range.
+ *
+ * @param {number} startYear - Inclusive start year.
+ * @param {number} endYear - Inclusive end year.
+ * @param {number} startDayOrdinal - Anchor weekday ordinal (0=Sun ... 6=Sat).
+ * @param {{ verboseDates?: boolean, perYear?: boolean }} [options]
+ * @returns {number} Total count of months in the range that have a 5th occurrence.
+ */
+function tallyFifthWeeks(startYear, endYear, startDayOrdinal, options = { verboseDates: false, perYear: false }) {
+    let total = 0;
+    for (let y = startYear; y <= endYear; y++) {
+        total += findFifthWeeks(y, startDayOrdinal, options);
+    }
+    return total;
 }
 
 /**
@@ -180,35 +183,51 @@ const nameToOrdinal = {
     saturday: 6, sat: 6,
 };
 
-// Backward-compat: allow --anchor as name(s)
-for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--anchor') {
-        const v = (args[++i] || '').split(',').map(s => s.trim().toLowerCase());
-        const ords = v.map(n => nameToOrdinal[n]).filter(v => v !== undefined);
-        if (ords.length > 0) weekdays = ords;
+function runCli() {
+    // Backward-compat: allow --anchor as name(s)
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--anchor') {
+            const v = (args[++i] || '').split(',').map(s => s.trim().toLowerCase());
+            const ords = v.map(n => nameToOrdinal[n]).filter(v => v !== undefined);
+            if (ords.length > 0) weekdays = ords;
+        }
     }
+
+    console.log(`\n5th week counter (court-style)`);
+    console.log(`Range: ${start}–${end}`);
+    const humanList = weekdays.map(wd => weekdayNames[wd]).join(' and ');
+    console.log(`Definition: Week 1 is the first week that contains a ${weekdays.length > 1 ? humanList : humanList}. A month has a "5th week" if it contains 5 such ${weekdays.length > 1 ? 'anchor days' : 'anchor day'} in that month.`);
+    console.log('Showing dates and per-year summary.');
+
+    weekdays.forEach(wd => {
+        const name = weekdayNames[wd];
+        // Print dates and per-year via legacy path for continuity
+        const total = tallyFifthWeeks(start, end, wd, { verboseDates, perYear });
+        // Compute analytics and print summary
+        const { total: distinctMonths, perYear: perYearCounts } = computeMonthsWithFifth(start, end, wd);
+        const yearSpan = end - start + 1;
+        const avgPerYear = distinctMonths / yearSpan;
+        const medianPerYear = (() => {
+            const arr = Object.values(perYearCounts).sort((a,b)=>a-b);
+            const mid = Math.floor(arr.length / 2);
+            return arr.length % 2 ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
+        })();
+        const minPerYear = Math.min(...Object.values(perYearCounts));
+        const maxPerYear = Math.max(...Object.values(perYearCounts));
+
+        console.log(`${name} (${wd}) → Months with a 5th week (first week contains ${name}): ${total} (between ${start} and ${end}).`);
+        console.log(`Summary for ${name}: total months=${distinctMonths}, years=${yearSpan}, avg/year=${avgPerYear.toFixed(2)}, median/year=${medianPerYear}, min/year=${minPerYear}, max/year=${maxPerYear}`);
+    });
 }
 
-console.log(`\n5th week counter (court-style)`);
-console.log(`Range: ${start}–${end}`);
-const humanList = weekdays.map(wd => weekdayNames[wd]).join(' and ');
-console.log(`Definition: Week 1 is the first week that contains a ${weekdays.length > 1 ? humanList : humanList}. A month has a "5th week" if it contains 5 such ${weekdays.length > 1 ? 'anchor days' : 'anchor day'} in that month.`);
-console.log('Showing dates and per-year summary.');
+if (require.main === module) {
+    runCli();
+}
 
-weekdays.forEach(wd => {
-    const name = weekdayNames[wd];
-    const total = tallyFifthWeeks(start, end, wd, { verboseDates, perYear });
-    const { total: distinctMonths, perYear: perYearCounts } = computeMonthsWithFifth(start, end, wd);
-    const yearSpan = end - start + 1;
-    const avgPerYear = distinctMonths / yearSpan;
-    const medianPerYear = (() => {
-        const arr = Object.values(perYearCounts).sort((a,b)=>a-b);
-        const mid = Math.floor(arr.length / 2);
-        return arr.length % 2 ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
-    })();
-    const minPerYear = Math.min(...Object.values(perYearCounts));
-    const maxPerYear = Math.max(...Object.values(perYearCounts));
-
-    console.log(`${name} (${wd}) → Months with a 5th week (first week contains ${name}): ${total} (between ${start} and ${end}).`);
-    console.log(`Summary for ${name}: total months=${distinctMonths}, years=${yearSpan}, avg/year=${avgPerYear.toFixed(2)}, median/year=${medianPerYear}, min/year=${minPerYear}, max/year=${maxPerYear}`);
-});
+module.exports = {
+    daysInMonth,
+    getFifthOccurrenceDate,
+    computeMonthsWithFifth,
+    listFifthOccurrenceDates,
+    tallyFifthWeeks,
+};
