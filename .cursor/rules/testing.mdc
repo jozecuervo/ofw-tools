@@ -1,0 +1,8 @@
+---
+description: Apply Jest AAA testing guidance to test files.
+globs:
+  - "**/__tests__/**/*"
+alwaysApply: true
+---
+Use `.github/prompts/unit-testing.md`. Keep tests small, mock I/O/heavy libs, and verify CLIs via spawnSync.
+

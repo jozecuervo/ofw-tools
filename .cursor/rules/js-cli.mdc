@@ -1,0 +1,8 @@
+---
+description: Apply Node.js CLI patterns to JS files.
+globs:
+  - "**/*.js"
+alwaysApply: false
+---
+Use `.github/prompts/js-cli-tools.md` for arg parsing, exit codes, streaming large files, and progress output.
+

@@ -1,0 +1,9 @@
+---
+description: Apply OFW parsing/analysis guidance to core OFW scripts.
+globs:
+  - "index.js"
+  - "message-volume.js"
+alwaysApply: false
+---
+Use `.github/prompts/ofw-parsing.md`.
+
