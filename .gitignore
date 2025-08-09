@@ -1,3 +1,5 @@
+source_files/moore-marsden.config.json
+source_files/apportionment.config.json
 output/
 **/node_modules
 .DS_Store

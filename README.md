@@ -101,11 +101,16 @@ Pass arguments after `--`.
 
 ### 6) Moore/Marsden Calculator (`moore-marsden.js`)
 
-- **Purpose**: Compute Separate Property (SP) and Community Property (CP) interests per Moore/Marsden. Prints a worksheet with intermediate values and percentages.
-- **Input**: Example numbers are embedded; edit the call at the bottom of `moore-marsden.js` to use your case values.
+- **Purpose**: Compute Separate Property (SP) and Community Property (CP) interests using the Moore/Marsden worksheet with clear intermediate values and percentages.
+- **Config**: Provide inputs via `source_files/moore-marsden.config.json` (gitignored) or pass `--config <path>`. If no config is provided, neutral defaults are used.
+- **Output**: Console worksheet (lines 1–13). Optionally emit a JSON worksheet via `--out-json`.
 - **Run**:
   ```bash
+  # With defaults (illustrative numbers)
   npm run moore-marsden
+
+  # With your local config (gitignored by default) and JSON output
+  npm run moore-marsden -- --config ./source_files/moore-marsden.config.json --out-json ./output/moore-marsden.json
   ```
 
 ### 7) Apportionment & Buyout with Credits (`apportionment-calc.js`)
