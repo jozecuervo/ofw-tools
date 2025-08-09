@@ -1,4 +1,4 @@
-function findFifthWeeks(year, startDayOrdinal) {
+function findFifthWeeks(year, startDayOrdinal, verbose = false) {
     const fifthWeeksStartDates = [];
 
     for (let month = 0; month < 12; month++) { // Loop through each month
@@ -14,7 +14,7 @@ function findFifthWeeks(year, startDayOrdinal) {
                     firstOccurrenceFound = true;
                 } else if (weekCount === 5) {
                     // If it's the fifth occurrence, add to the result array
-                    console.log(date.toISOString().substring(0, 10));
+                    if (verbose) console.log(date.toISOString().substring(0, 10));
                     fifthWeeksStartDates.push(new Date(date));
                 }
             }
@@ -24,21 +24,46 @@ function findFifthWeeks(year, startDayOrdinal) {
 
     // Format the dates for output
     // return fifthWeeksStartDates.map(date => date.toISOString().substring(0, 10));
-    console.log(year, fifthWeeksStartDates.length);
+    if (verbose) console.log(year, fifthWeeksStartDates.length);
     return fifthWeeksStartDates.length;
 }
 
-function tallyFifthWeeks(startYear, endYear, startDayOrdinal) {
+function tallyFifthWeeks(startYear, endYear, startDayOrdinal, verbose = false) {
     let totalFifthWeeks = 0;
 
     for (let year = startYear; year <= endYear; year++) {
-        totalFifthWeeks += findFifthWeeks(year, startDayOrdinal);
+        totalFifthWeeks += findFifthWeeks(year, startDayOrdinal, verbose);
     }
 
     return totalFifthWeeks;
 }
 
-// Example usage: Tally up the total number of fifth weeks where the week starts on a Friday, from 2024 to 2039
-console.log(tallyFifthWeeks(2024, 2035, 5));
-// Example usage: Tally up the total number of fifth weeks where the week starts on a Saturday, from 2024 to 2039
-console.log(tallyFifthWeeks(2024, 2035, 6));
+function printHelp() {
+    console.log(`\nUsage: node nth-week.js [--start <year>] [--end <year>] [--weekday <0-6|csv>] [--list]\n\nOptions:\n  --start     Start year (default: 2024)\n  --end       End year inclusive (default: 2035)\n  --weekday   Weekday ordinal 0=Sun ... 6=Sat or CSV of ordinals (default: 5,6)\n  --list      Print each 5th-occurrence date found (verbose)\n  -h, --help  Show this help\n`);
+}
+
+const args = process.argv.slice(2);
+if (args.includes('-h') || args.includes('--help')) {
+    printHelp();
+    process.exit(0);
+}
+
+let start = 2024;
+let end = 2035;
+let weekdays = [5, 6];
+let verbose = false;
+for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === '--start') start = Number(args[++i]);
+    else if (a === '--end') end = Number(args[++i]);
+    else if (a === '--weekday') {
+        const val = args[++i];
+        weekdays = val.split(',').map(n => Number(n.trim())).filter(n => !Number.isNaN(n));
+    }
+    else if (a === '--list') verbose = true;
+}
+
+weekdays.forEach(wd => {
+    const total = tallyFifthWeeks(start, end, wd, verbose);
+    console.log(`Weekday ${wd}: ${total} months with a 5th occurrence between ${start}-${end}`);
+});
