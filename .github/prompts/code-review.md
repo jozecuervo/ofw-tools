@@ -21,6 +21,12 @@ applyTo: "**/*"
   - Comments explain "why" when non-obvious.
   - Tests present for critical logic and tricky parsing rules.
 
+### Repo-Specific Rules
+
+- Versioning: ensure `package.json` version is bumped (SemVer) for user-facing changes.
+- Changelog: ensure `CHANGELOG.md` has an entry for this change.
+- Commits: prefer small, discrete commits scoped to one functional change.
+
 Provide actionable feedback in bullets with suggested diffs or function names.
 
 

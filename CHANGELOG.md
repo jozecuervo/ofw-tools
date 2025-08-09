@@ -1,3 +1,6 @@
+## 1.2.0 - 2025-08-09
+- feat: add IDE-agnostic AI prompts, Divorce Navigator persona, templates, and checklists
+- docs: add AI Tooling section, contributing rules for prompts, versioning, and changelog
 ## Changelog
 
 All notable changes to this project will be documented in this file.

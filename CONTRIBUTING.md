@@ -24,4 +24,10 @@ applyTo: "**/__tests__/**/*.{js,ts}"
 ---
 ```
 
+## Versioning & Changelog
+
+- Always bump `package.json` version (SemVer) for releases that change behavior or outputs.
+- Always add a corresponding `CHANGELOG.md` entry (version, date, bullets).
+- Keep commits small and scoped to a single functional change.
+
 

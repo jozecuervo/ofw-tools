@@ -52,4 +52,9 @@ function readJsonFileSync(filePath) {
 - Favor deterministic unit tests under `__tests__/` using Jest.
 - Mock external libraries or filesystem where practical, especially for large PDFs or sentiment libraries.
 
+### Repo Rules: Versioning & Changelog
+
+- When changes affect outputs or behavior, bump `package.json` version (SemVer) and add a `CHANGELOG.md` entry.
+- Keep commits discrete; one functional change per commit when feasible.
+
 
