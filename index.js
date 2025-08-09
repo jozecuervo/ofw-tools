@@ -171,13 +171,28 @@ function parseMessage(messageBlock) {
  */
 function processMessages(text) {
     const messages = [];
-    const messageBlocks = text.split(/Message \d+ of \d+/).slice(1);  // Assumes each message is separated by 'Message N of M'
+    const lines = text.split('\n');
+    const boundaryRegex = /^\s*Message\s+\d+\s+of\s+\d+\s*$/; // strict boundary line only
+    let current = [];
+    let started = false;
 
-    messageBlocks.forEach((messageBlock) => {
-        const message = parseMessage(messageBlock);
-        messages.push(message);
-    });
-
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (boundaryRegex.test(line)) {
+            if (started && current.length) {
+                const blockText = current.join('\n');
+                messages.push(parseMessage(blockText));
+                current = [];
+            }
+            started = true;
+            continue; // do not include boundary line in block
+        }
+        if (started) current.push(line);
+    }
+    if (started && current.length) {
+        const blockText = current.join('\n');
+        messages.push(parseMessage(blockText));
+    }
     return messages;
 }
 
