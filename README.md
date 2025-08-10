@@ -1,5 +1,9 @@
 ## OFW Tools: Divorce and Communication Analysis Toolkit
 
+### ⚠️ IMPORTANT LEGAL DISCLAIMER
+
+**This toolkit is for educational and calculation purposes only and does not constitute legal advice.** Property division, family law issues, and communication analysis involve complex legal and factual determinations that vary by jurisdiction and individual circumstances. Always consult with a qualified family law attorney before making decisions based on these calculations or analysis. The tools do not account for many factors that may affect legal outcomes, including transmutations, agreements, refinances, improvements, or other legal doctrines.
+
 ### Overview
 
 Local-first Node.js CLIs that streamline common family-law workflows. These tools help you quickly analyze communications, generate calendars, compute property/equity figures, and now parse paychecks — all on your machine for privacy and speed. Outputs favor simple formats (CSV/Markdown/JSON) that drop easily into exhibits or spreadsheets.
@@ -236,6 +240,52 @@ Legal note: This worksheet is designed for the Moore/Marsden context (premarital
   - Post‑separation principal is treated as Epstein reimbursement to the paying spouse; it is not converted into an equity “share.”
   - Watts is modeled as ½ FRV × months, net of carrying‑cost offsets paid by the occupant; applied after property interests.
   - Data integrity checks: warns if `Cp` differs from `L0 − L1`, throws if PP ≤ 0, and warns if baseline equity doesn’t match `FMV − L2` within a penny.
+#### Enhanced Features:
+- **Input Validation**: Comprehensive validation with granular error messages and recovery suggestions
+- **Dry Run Mode**: Use `--dry-run` to validate inputs without performing calculations
+- **Enhanced Error Handling**: Detailed warnings for edge cases like negative appreciation, refinancing complications, and bucket sum mismatches
+- **Metadata Output**: Results include regime explanation and calculation details
+- **Edge Case Support**: Handles negative appreciation, zero appreciation, and complex scenarios with appropriate warnings
+
+#### New CLI Options:
+```bash
+# Dry run validation
+npm run apportionment -- --config ./config.json --dry-run
+
+# Skip input validation (not recommended)
+npm run apportionment -- --no-validate
+
+# Enhanced help with edge case documentation
+npm run apportionment -- --help
+```
+
+### 8) Comprehensive Mocks and Testing (`mocks/` folder)
+
+- **Purpose**: Comprehensive testing and demo data for the apportionment system, including Moore/Marsden and Family Code §2640 scenarios
+- **Structure**:
+  - `mocks/data/`: Sample property data files for different legal regimes and edge cases
+  - `mocks/demos/`: Interactive demo scripts and educational walkthroughs  
+  - `mocks/fixtures/`: Test data for boundary conditions and performance testing
+  - `mocks/docs/`: Annotated examples and scenario explanations
+- **Quick Start**:
+  ```bash
+  # Interactive regime comparison demo
+  node ./mocks/demos/regime-comparison.js
+  
+  # Step-by-step Moore/Marsden educational walkthrough
+  node ./mocks/demos/step-by-step-walkthrough.js
+  
+  # Test with sample Moore/Marsden data
+  npm run apportionment -- --config ./mocks/data/moore-marsden-basic.json
+  
+  # Test with Family Code §2640 scenario
+  npm run apportionment -- --config ./mocks/data/section-2640-basic.json
+  
+  # Test edge case: negative appreciation
+  npm run apportionment -- --config ./mocks/data/edge-case-negative-appreciation.json --dry-run
+  ```
+- **Educational Value**: Each mock scenario includes legal citations, factual assumptions, expected results, and limitations
+- **Legal Context**: All scenarios include disclaimers and appropriate case law references
 
 ### 8) Paylocity Paychecks → CSV (`paylocity.js`)
 
