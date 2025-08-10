@@ -25,12 +25,9 @@ PR: [#6](https://github.com/jozecuervo/ofw-tools/pull/6)
 ### Tests
 - All affected unit tests run green: `nth-week`, `visitation-cal`, `imessage`, `moore-marsden`, and OFW parser boundary test.
 
-## Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 ## 1.2.0 - 2025-08-09
+
+PR: [#5](https://github.com/jozecuervo/ofw-tools/pull/5)
 
 ### Added
 - AI prompt structure under `.github/prompts/` and `.github/prompt-snippets/` with core prompts:
@@ -53,6 +50,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.1.1] - 2025-08-09
 
+PR: [#4](https://github.com/jozecuervo/ofw-tools/pull/4)
+
 ### OFW PDF Analyzer (`index.js`)
 - Removed hard-coded recipient ignores; visibility is now controlled solely via `--exclude <csv>` patterns.
 - Skips non-message placeholder rows (e.g., page banners) during aggregation to prevent entries like "OFW Report" from appearing in totals and weekly tables.
@@ -61,6 +60,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - Minor description/overview tweaks to clarify project scope.
 
 ## [1.1.0] - 2025-08-09
+
+PR: [#3](https://github.com/jozecuervo/ofw-tools/pull/3)
 
 ### OFW PDF Analyzer (`index.js`)
 - Robust parser for both legacy “tail metadata” and new 2025 “head metadata (values on next line)” formats.
@@ -134,6 +135,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [0.9.0] - 2024-04-08
 
+PR: [#2](https://github.com/jozecuervo/ofw-tools/pull/2)
+
 ### Added
 - Fifth-week utilities: tally months with a 5th occurrence of a weekday over a range.
 
@@ -149,6 +152,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - Output formatting and headers for clarity.
 
 ## [0.7.0] - 2024-02-14
+
+PR: [#1](https://github.com/jozecuervo/ofw-tools/pull/1)
 
 ### Added
 - Formatted Markdown output containing all messages.
