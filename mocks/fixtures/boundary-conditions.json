@@ -1,0 +1,183 @@
+{
+  "boundaryConditions": {
+    "zeroAppreciation": {
+      "description": "Property with no appreciation during marriage",
+      "data": {
+        "houseValueAtPurchase": 500000,
+        "fairMarketAtMarriage": 500000,
+        "appraisedValue": 500000,
+        "downPayment": 100000,
+        "principalPaidDuringMarriage": 50000,
+        "yourSeparateInterest": 100000,
+        "herSeparateInterest": 0,
+        "acquisitionContext": "premaritalOwner"
+      },
+      "expectedBehavior": {
+        "appreciationDuringMarriage": 0,
+        "communityShareOfAppreciation": 0,
+        "separateShareOfAppreciation": 0,
+        "formula": "When appreciation = 0, only principal contributions matter"
+      }
+    },
+    
+    "negativeAppreciation": {
+      "description": "Property that lost value during marriage",
+      "data": {
+        "houseValueAtPurchase": 600000,
+        "fairMarketAtMarriage": 700000,
+        "appraisedValue": 650000,
+        "downPayment": 120000,
+        "principalPaidDuringMarriage": 60000,
+        "yourSeparateInterest": 120000,
+        "herSeparateInterest": 0,
+        "acquisitionContext": "premaritalOwner"
+      },
+      "expectedBehavior": {
+        "appreciationDuringMarriage": -50000,
+        "communityShareOfDepreciation": -5000,
+        "warningGenerated": true,
+        "formula": "Community shares proportionally in depreciation"
+      }
+    },
+    
+    "minimumValues": {
+      "description": "Testing with minimum allowable positive values",
+      "data": {
+        "houseValueAtPurchase": 1,
+        "fairMarketAtMarriage": 1,
+        "appraisedValue": 2,
+        "downPayment": 0.5,
+        "principalPaidDuringMarriage": 0.25,
+        "yourSeparateInterest": 0.5,
+        "herSeparateInterest": 0,
+        "acquisitionContext": "premaritalOwner"
+      },
+      "expectedBehavior": {
+        "validationPasses": true,
+        "calculationCompletes": true,
+        "proportionsCorrect": true
+      }
+    },
+    
+    "largeValues": {
+      "description": "Testing with very large property values",
+      "data": {
+        "houseValueAtPurchase": 50000000,
+        "fairMarketAtMarriage": 65000000,
+        "appraisedValue": 80000000,
+        "downPayment": 10000000,
+        "principalPaidDuringMarriage": 5000000,
+        "yourSeparateInterest": 10000000,
+        "herSeparateInterest": 0,
+        "acquisitionContext": "premaritalOwner"
+      },
+      "expectedBehavior": {
+        "noOverflow": true,
+        "accurateCalculations": true,
+        "properFormatting": true
+      }
+    },
+    
+    "equalContributions": {
+      "description": "Scenario where separate and community contributions are equal",
+      "data": {
+        "houseValueAtPurchase": 1000000,
+        "fairMarketAtMarriage": 1200000,
+        "appraisedValue": 1500000,
+        "downPayment": 250000,
+        "principalPaidDuringMarriage": 250000,
+        "yourSeparateInterest": 250000,
+        "herSeparateInterest": 0,
+        "acquisitionContext": "premaritalOwner"
+      },
+      "expectedBehavior": {
+        "separatePercentage": 0.25,
+        "communityPercentage": 0.25,
+        "appreciationSplit": "Equal split of appreciation during marriage"
+      }
+    }
+  },
+  
+  "validationScenarios": {
+    "invalidPurchasePrice": {
+      "description": "Testing invalid purchase price values",
+      "testCases": [
+        {
+          "data": { "houseValueAtPurchase": 0 },
+          "expectedError": "Purchase price must be a positive number greater than 0"
+        },
+        {
+          "data": { "houseValueAtPurchase": -100000 },
+          "expectedError": "Purchase price must be a positive number greater than 0"
+        },
+        {
+          "data": { "houseValueAtPurchase": "invalid" },
+          "expectedError": "Purchase price must be a positive number greater than 0"
+        }
+      ]
+    },
+    
+    "invalidAcquisitionContext": {
+      "description": "Testing invalid acquisition context values",
+      "testCases": [
+        {
+          "data": { "acquisitionContext": "invalidContext" },
+          "expectedError": "Invalid acquisitionContext"
+        },
+        {
+          "data": { "acquisitionContext": "" },
+          "expectedError": "Invalid acquisitionContext"
+        },
+        {
+          "data": { "acquisitionContext": null },
+          "defaultBehavior": "Should default to 'premaritalOwner'"
+        }
+      ]
+    },
+    
+    "bucketSumValidation": {
+      "description": "Testing bucket sum validation warnings",
+      "testCases": [
+        {
+          "data": {
+            "houseValueAtPurchase": 500000,
+            "principalPaidDuringMarriage": 100000,
+            "yourSeparateInterest": 200000,
+            "herSeparateInterest": 100000
+          },
+          "expectedWarning": "Bucket contributions do not equal purchase price"
+        },
+        {
+          "data": {
+            "houseValueAtPurchase": 500000,
+            "principalPaidDuringMarriage": 600000,
+            "yourSeparateInterest": 100000,
+            "herSeparateInterest": 0
+          },
+          "expectedWarning": "CP principal exceeds purchase price"
+        }
+      ]
+    }
+  },
+  
+  "performanceScenarios": {
+    "description": "Scenarios for testing calculation performance and efficiency",
+    "largeDataset": {
+      "description": "Multiple properties for batch processing",
+      "properties": []
+    },
+    "precisionTesting": {
+      "description": "Testing floating point precision with complex decimal values",
+      "data": {
+        "houseValueAtPurchase": 333333.33,
+        "fairMarketAtMarriage": 444444.44,
+        "appraisedValue": 555555.55,
+        "downPayment": 66666.67,
+        "principalPaidDuringMarriage": 33333.33,
+        "yourSeparateInterest": 66666.67,
+        "herSeparateInterest": 0,
+        "acquisitionContext": "premaritalOwner"
+      }
+    }
+  }
+}
