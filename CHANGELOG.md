@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.7.0] - 2025-08-10
+
+### Changed
+- Paylocity tools now conform to repo conventions:
+  - Default CSV outputs to `./output/` when `--out` is not provided
+  - Monthly analysis file name is derived from the main CSV as `<name>_monthly.csv` (e.g., `paychecks_monthly.csv`)
+  - Aggregates multiple records for the same pay date before analysis to prevent duplicate-period rows
+  - Trailing 12-month average computed over a true 12-month window with small-entry filtering to avoid skew (e.g., reimbursements)
+- Tests updated to reflect default output path and aggregation behavior
+
+### Documentation
+- README updated for Paylocity usage, defaults, and legal context
+  - Notes tie monthly (26/12) conversion to FL-150 reporting practices
+  - References to California Family Code §§ 4055, 4058, 4059 where relevant
+
 ## [1.6.0] - 2025-08-10
 
 ### Added

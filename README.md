@@ -49,6 +49,7 @@ Pass arguments after `--`.
 - **DissoMaster spousal support calculator**: `npm run dissomaster`
 - iMessage parser with sentiment: `npm run imessage -- /absolute/path/to/imessage.txt`
 - Paylocity paychecks → CSV: `npm run paylocity -- /absolute/path/to/folder/of/pdfs`
+   - Defaults: writes `./output/paychecks.csv` and `./output/paychecks_monthly.csv` unless `--out` is provided.
    - Tips: `--debug-text` writes normalized text to `<source>/_debug_text/`; `--use-txt` reads `.txt` files for testing.
 
 ---
@@ -323,7 +324,7 @@ npm run apportionment -- --help
 - **Input**: Path to a folder containing `.pdf` paystubs exported from Paylocity.
 - **Output**: 
   - Raw data `output/paychecks.csv` by default; override with `--out <file.csv>`.
-  - Monthly gross analysis: `output/monthly-gross-analysis.csv`
+  - Monthly analysis filename derived from the raw data CSV: e.g., `output/paychecks_monthly.csv`.
 - **Run**:
   ```bash
   npm run paylocity -- /absolute/path/to/paystubs
@@ -332,6 +333,12 @@ npm run apportionment -- --help
   ```
 - **Columns**: `File, Pay Date, Period Start, Period End, Gross Pay, Net Pay, Total Taxes, Total Deductions, Federal Income Tax, State Income Tax, Social Security, Medicare`.
 - **Notes**: Parser is resilient to minor label shifts (e.g., "Pay Date" vs. "Check Date"; "Pay Period" range or separate Begin/End). Missing values are left blank.
+  - Rows that share the same pay date are aggregated before the monthly analysis to avoid duplicate-period entries in the summary.
+  - Monthly analysis includes a per-period 26/12 projection and a trailing 12-month average computed over a one-year window with small-entry filtering; intended for FL‑150 monthly reporting.
+
+#### Legal context and applicability (Income/Support)
+- For guideline child support and income treatment, see Family Code §§ 4055 (guideline formula), 4058 (annual gross income), and 4059 (allowable deductions).
+- This tool provides CSVs aligned with common FL‑150 financial disclosure needs; it does not compute support. Combine with your support workflows as appropriate.
 
 ---
 
