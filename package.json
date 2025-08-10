@@ -7,7 +7,7 @@
     "brew:install": "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"",
     "test": "jest",
     "prompts:validate": "node scripts/validate-prompts.js",
-    "ofw:analyze": "node index.js",
+    "ofw:analyze": "node ofw.js",
     "ofw:clusters": "node message-volume.js",
     "visitation": "node visitation-cal.js",
     "nth-week": "node nth-week.js",

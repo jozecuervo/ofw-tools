@@ -200,7 +200,7 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
 
 
 function printHelp() {
-    console.log(`\nUsage: node index.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--exclude <csv>]\n\nOptions:\n  --no-markdown           Skip writing the per-message Markdown file\n  --no-csv                Skip writing the weekly CSV summary\n  --exclude <csv>         Comma-separated substrings to hide in printed tables (case-insensitive)\n  -h, --help              Show this help\n`);
+    console.log(`\nUsage: node ofw.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--exclude <csv>]\n\nOptions:\n  --no-markdown           Skip writing the per-message Markdown file\n  --no-csv                Skip writing the weekly CSV summary\n  --exclude <csv>         Comma-separated substrings to hide in printed tables (case-insensitive)\n  -h, --help              Show this help\n`);
 }
 
 function runCli(rawArgs) {

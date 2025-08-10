@@ -26,12 +26,6 @@ module.exports = {
   __parseMessage: ofw.__parseMessage,
 };
 
-if (require.main === module) {
-  const args = process.argv.slice(2);
-  const result = ofw.runCli(args);
-  if (result && typeof result.then === 'function') {
-    result.catch(() => {});
-  }
-}
+// CLI wrapper intentionally resides in `ofw.js` so it can be invoked via `node ofw.js`
 
 
