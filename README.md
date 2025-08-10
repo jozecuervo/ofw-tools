@@ -13,6 +13,7 @@ What’s included:
   - Fifth-week analyzer to quantify months with “5th” occurrences of anchor weekdays
 - Property and finance calculators
   - Moore/Marsden worksheet and apportionment/buyout with credits (Watts/Epstein/fees)
+  - **DissoMaster spousal support calculator** with tax calculations and duration guidelines
 - Payroll parsing
   - Paylocity paycheck PDFs → single CSV (one row per paycheck) with robust field extraction
 
@@ -41,6 +42,7 @@ Pass arguments after `--`.
 - Fifth-week counter (built-in examples): `npm run nth-week`
 - Moore/Marsden calculation (example values): `npm run moore-marsden`
 - Apportionment & buyout calculator (example values): `npm run apportionment`
+- **DissoMaster spousal support calculator**: `npm run dissomaster`
 - iMessage parser with sentiment: `npm run imessage -- /absolute/path/to/imessage.txt`
 - Paylocity paychecks → CSV: `npm run paylocity -- /absolute/path/to/folder/of/pdfs`
    - Tips: `--debug-text` writes normalized text to `<source>/_debug_text/`; `--use-txt` reads `.txt` files for testing.
@@ -166,7 +168,35 @@ Pass arguments after `--`.
   ```
  - **Notes**: Neutral, even-number example defaults to illustrate formulas. Future enhancement: toggles for Epstein-only vs. equity allocation and FRV offsets.
 
-### 8) Paylocity Paychecks → CSV (`paylocity.js`)
+### 8) DissoMaster Spousal Support Calculator (`dissomaster.js`)
+
+- **Purpose**: Calculate California guideline spousal support using DissoMaster methodology with comprehensive tax calculations and duration guidelines.
+- **Features**:
+  - Basic DissoMaster formula: 40% of income gap minus 50% of child support
+  - Full tax calculations (Federal, CA state, payroll taxes)
+  - Support duration guidelines based on marriage length
+  - Payment schedules with step-down provisions
+  - Input validation and comprehensive disclaimers
+- **Config**: You can supply a local config at `source_files/dissomaster.config.json` (gitignored) or pass `--config <path>`.
+- **Output**: Console breakdown with income analysis, support calculation, duration analysis, and optional payment schedule.
+- **Run**:
+  ```bash
+  # With defaults (illustrative numbers)
+  npm run dissomaster
+
+  # With duration analysis and payment schedule
+  npm run dissomaster -- --duration --schedule
+
+  # Summary mode only
+  npm run dissomaster -- --summary
+
+  # With your local config and JSON output
+  npm run dissomaster -- --config ./source_files/dissomaster.config.json --out-json ./output/dissomaster.json
+  ```
+- **Important**: This calculator provides estimates only for educational purposes. Results should NOT replace certified DissoMaster software or professional legal counsel. Actual support awards are subject to court discretion and many factors not captured in simplified calculations.
+- **Citations**: Family Code §§ 4320 (support factors), 4325 (temporary support), DissoMaster methodology.
+
+### 9) Paylocity Paychecks → CSV (`paylocity.js`)
 
 - **Purpose**: Scan a folder of Paylocity paycheck PDFs and produce a single CSV with one row per paycheck.
 - **Input**: Path to a folder containing `.pdf` paystubs exported from Paylocity.
