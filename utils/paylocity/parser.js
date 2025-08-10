@@ -120,7 +120,7 @@ function findDateAfterLabel(text, label) {
  *  - "$1,234.56 Label"
  */
 function extractAmountByLabel(text, labels) {
-  const amountPattern = "\\(?-?\\$?([0-9]{1,3}(?:,[0-9]{3})*(?:\\.[0-9]{2})|[0-9]+(?:\\.[0-9]{2}))\\)?";
+  const amountPattern = AMOUNT_REGEX_PATTERN;
   const joinedLabels = labels.map(l => l.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")).join("|");
 
   const regexes = [
