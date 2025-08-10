@@ -187,21 +187,21 @@ function printHelp() {
     console.log(`\nUsage: node imessage.js <path-to-imessage.txt> [--out-dir <directory>]\n\nOptions:\n  --out-dir   Output directory for JSON files (default: input file directory)\n  -h, --help  Show this help\n`);
 }
 
-const rawArgs = process.argv.slice(2);
-if (rawArgs.includes('-h') || rawArgs.includes('--help') || rawArgs.length === 0) {
-    printHelp();
-    process.exit(rawArgs.length === 0 ? 1 : 0);
-}
-
-const inputPath = rawArgs[0];
-let outDir = path.join(__dirname, 'output');
-for (let i = 1; i < rawArgs.length; i++) {
-    if (rawArgs[i] === '--out-dir') {
-        outDir = rawArgs[++i];
-    }
-}
-
 function runCli() {
+    const rawArgs = process.argv.slice(2);
+    if (rawArgs.includes('-h') || rawArgs.includes('--help') || rawArgs.length === 0) {
+        printHelp();
+        process.exit(rawArgs.length === 0 ? 1 : 0);
+    }
+
+    const inputPath = rawArgs[0];
+    let outDir = path.join(__dirname, 'output');
+    for (let i = 1; i < rawArgs.length; i++) {
+        if (rawArgs[i] === '--out-dir') {
+            outDir = rawArgs[++i];
+        }
+    }
+
     parseIMessageFile(inputPath)
         .then(groupedMessages => {
             console.log(`Writing parsed messages to directory: ${path.resolve(outDir)}`);
