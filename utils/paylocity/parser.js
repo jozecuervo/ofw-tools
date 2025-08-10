@@ -196,7 +196,16 @@ function parsePaylocityPaystub(rawText) {
     const endRaw = firstMatch(text, [/(?:Period\s*(?:End|Ending)\s*(?:Date)?)\s*:?\s*([0-1]?\d[\/-][0-3]?\d[\/-]\d{4})/i,
                                     /(?:Period\s*(?:End|Ending)\s*(?:Date)?)\s*:?\s*([A-Za-z]+\s+\d{1,2},\s*\d{4})/i]);
     periodStart = normalizeDateString(beginRaw) || normalizeDateString(findDateAfterLabel(text, 'Period Beginning')) || normalizeDateString(findDateAfterLabel(text, 'Period Start'));
-    periodEnd = normalizeDateString(endRaw) || normalizeDateString(findDateAfterLabel(text, 'Period Ending')) || normalizeDateString(findDateAfterLabel(text, 'Period End'));
+    const periodBeginningRaw = findDateAfterLabel(text, 'Period Beginning');
+    const periodStartRaw = findDateAfterLabel(text, 'Period Start');
+    periodStart = normalizeDateString(beginRaw) ||
+                  normalizeDateString(periodBeginningRaw) ||
+                  normalizeDateString(periodStartRaw);
+    const periodEndingRaw = findDateAfterLabel(text, 'Period Ending');
+    const periodEndRaw = findDateAfterLabel(text, 'Period End');
+    periodEnd = normalizeDateString(endRaw) ||
+                normalizeDateString(periodEndingRaw) ||
+                normalizeDateString(periodEndRaw);
   }
 
   // Helper to scan lines for a label and pick the nearest currency on the same or next line
