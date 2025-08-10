@@ -18,7 +18,7 @@
 - Updated `README.md` with AI Tooling section and prompts license link
 - Updated `CONTRIBUTING.md` and `copilot-instructions.md` to reflect repo rules and navigation
 
-## [Unreleased]
+## [1.2.1] - 2025-08-10
 
 ### Changed
 - Centralized shared date helpers into `utils/date.js`:
@@ -31,10 +31,10 @@
   - `nth-week.js` imports `daysInMonth`, `getFifthOccurrenceDate`, `weekdayNames`, `nameToOrdinal`
   - `visitation-cal.js` imports `weekdayNames`, `nameToOrdinal`, `getFirstAnchorOfMonth`, `getFirstWeekStart`
   - `utils.js` delegates `getWeekString`, `parseDate`, `formatDate` to `utils/date.js`
-- Removed `moment` usage from code; candidate for dependency removal in `package.json` in a follow-up commit
+- Removed `moment` usage from code and dependency list in `package.json`
 
 ### Tests
-- All affected unit tests updated/run; green on `nth-week`, `visitation-cal`, `imessage`, `moore-marsden`, and OFW parser boundary test.
+- All affected unit tests run green: `nth-week`, `visitation-cal`, `imessage`, `moore-marsden`, and OFW parser boundary test.
 
 ## Changelog
 
