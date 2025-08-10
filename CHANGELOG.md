@@ -125,7 +125,7 @@ PR: [#3](https://github.com/jozecuervo/ofw-tools/pull/3)
 - Unit tests in `__tests__/nth-week.test.js` (leap years, tallies, ranges).
 
 ### Visitation Calendar (`visitation-cal.js`)
-- Anchor-based Week 1 (`--anchor <weekday>`, default Friday); calendar grid showing V (weekend) and V/Z (Wed visit/Zoom).
+- Anchor-based Week 1 (`--anchor <weekday>`, default Friday); calendar grid showing V (weekend) and V/Z (Wednesday visit/Zoom).
 - Monthly summaries of Wed visits/zooms and weekend visits with exact dates.
 - Refactored pure functions, `runCli()`, and JSDoc.
 - Unit tests in `__tests__/visitation-cal.test.js` (anchor and week alignment).

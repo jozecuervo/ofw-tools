@@ -50,7 +50,7 @@ Pass arguments after `--`.
 
 ### 1) OFW PDF Analyzer (`index.js`)
 
-- **Purpose**: Parse an Our Family Wizard Messages PDF and compute weekly stats per person: messages sent/read, average read time, total words, and sentiment. Outputs JSON, Markdown to console, and CSV.
+- **Purpose**: Parse an "Our Family Wizard" Messages PDF and compute weekly stats per person: messages sent/read, average read time, total words, and sentiment. Outputs JSON, Markdown to console, and CSV.
 - **Input**: Path to an OFW messages PDF (export with full pages per message). Supports both legacy (metadata after body) and new (metadata at head; values on next line) formats.
 - **Output**:
   - `same-directory/<basename>.json` (parsed messages)
@@ -152,7 +152,7 @@ Pass arguments after `--`.
 
 ### 7) Apportionment & Buyout with Credits (`apportionment-calc.js`)
 
-- **Purpose**: Pro-rata apportionment of equity (separate vs. community) and illustrative buyout calculations incorporating Watts (use) credits, Epstein reimbursements, and attorney fees.
+- **Purpose**: Pro rata apportionment of equity (separate vs. community) and illustrative buyout calculations incorporating Watts (use) credits, Epstein reimbursements, and attorney fees.
 - **Config**: You can supply a local config at `source_files/apportionment.config.json` (gitignored) or pass `--config <path>`.
 - **Output**: Console breakdown and computed buyout; optional machine-readable JSON via `--out-json`.
 - **Run**:

@@ -27,12 +27,15 @@ Options:
 `);
 }
 
-function listPdfFilesInDir(dirPath) {
+function listInputFilesInDir(dirPath, useTxt) {
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
   return entries
     .filter((e) => e.isFile())
     .map((e) => path.join(dirPath, e.name))
-    .filter((p) => p.toLowerCase().endsWith(".pdf"))
+    .filter((p) => {
+      const lower = p.toLowerCase();
+      return useTxt ? lower.endsWith('.txt') : lower.endsWith('.pdf');
+    })
     .sort();
 }
 
@@ -81,8 +84,13 @@ function recordToRow(filePath, record) {
     .join(",");
 }
 
-async function parseOnePdf(filePath, debugDir) {
-  const rawText = await parsePdf(filePath);
+async function parseOnePdf(filePath, debugDir, useTxt) {
+  let rawText;
+  if (useTxt) {
+    rawText = fs.readFileSync(filePath, 'utf8');
+  } else {
+    rawText = await parsePdf(filePath);
+  }
   if (debugDir) {
     const base = path.basename(filePath, path.extname(filePath));
     const out = path.join(debugDir, `${base}.txt`);
@@ -125,10 +133,11 @@ async function main() {
     if (val && !val.startsWith("--")) nameFilter = val.toLowerCase();
   }
 
-  const pdfFiles = listPdfFilesInDir(sourceDir).filter((p) =>
+  const useTxt = rawArgs.includes("--use-txt") || process.env.PAYLOCITY_TEST_USE_TXT === '1';
+  const inputFiles = listInputFilesInDir(sourceDir, useTxt).filter((p) =>
     nameFilter ? path.basename(p).toLowerCase().includes(nameFilter) : true
   );
-  if (pdfFiles.length === 0) {
+  if (inputFiles.length === 0) {
     console.error("No PDF files found in source folder.");
     process.exit(1);
   }
@@ -140,9 +149,9 @@ async function main() {
   const debugDir = rawArgs.includes("--debug-text") ? path.join(sourceDir, "_debug_text") : null;
   if (debugDir) ensureDir(debugDir);
 
-  for (const filePath of pdfFiles) {
+  for (const filePath of inputFiles) {
     try {
-      const record = await parseOnePdf(filePath, debugDir);
+      const record = await parseOnePdf(filePath, debugDir, useTxt);
       rows.push(recordToRow(filePath, record));
       console.log(`Parsed: ${path.basename(filePath)}`);
     } catch (err) {
@@ -153,7 +162,7 @@ async function main() {
   const csv = rows.join("\n") + "\n";
   ensureDir(path.dirname(outCsv));
   writeFile(outCsv, csv);
-  console.log(`\nWrote ${pdfFiles.length} row(s) to ${outCsv}`);
+  console.log(`\nWrote ${inputFiles.length} row(s) to ${outCsv}`);
   if (debugDir) console.log(`Normalized text dumps written to ${debugDir}`);
 }
 
