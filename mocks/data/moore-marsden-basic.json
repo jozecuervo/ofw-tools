@@ -1,0 +1,53 @@
+{
+  "scenario": "Basic Moore/Marsden - Premarital Home with Community Contributions",
+  "description": "Spouse A owned home before marriage, made down payment from separate funds. During marriage, community made mortgage payments reducing principal. Property appreciated during marriage.",
+  "legalBasis": {
+    "regime": "Moore/Marsden",
+    "caseCitations": [
+      "In re Marriage of Moore (1980) 28 Cal.3d 366, 374-375",
+      "In re Marriage of Marsden (1982) 130 Cal.App.3d 426, 435-437"
+    ],
+    "applicableStatutes": [
+      "Cal. Fam. Code § 760 (community property presumption)",
+      "Cal. Fam. Code § 770 (separate property)",
+      "Cal. Fam. Code § 2640 (separate property contributions)"
+    ]
+  },
+  "factualAssumptions": {
+    "acquisitionContext": "premaritalOwner",
+    "titleHistory": "Spouse A owned property in separate name before marriage, no transmutation occurred",
+    "financingHistory": "Single original purchase loan, no refinancing or HELOCs",
+    "improvements": "No major capital improvements, only routine maintenance",
+    "documentation": "Clear tracing of separate and community contributions to principal reduction"
+  },
+  "calculations": {
+    "houseValueAtPurchase": 500000,
+    "downPayment": 100000,
+    "fairMarketAtMarriage": 650000,
+    "appraisedValue": 800000,
+    "mortgageAtPurchase": 400000,
+    "mortgageAtSeparation": 350000,
+    "principalPaidDuringMarriage": 50000,
+    "yourSeparateInterest": 100000,
+    "herSeparateInterest": 0,
+    "acquisitionContext": "premaritalOwner"
+  },
+  "expectedResults": {
+    "regime": "Moore/Marsden",
+    "appreciationDuringMarriage": 150000,
+    "communityShareOfAppreciation": 15000,
+    "separatePropertyInterest": 235000,
+    "communityPropertyInterest": 65000
+  },
+  "educationalNotes": {
+    "keyPrinciple": "Community acquires pro tanto interest in appreciation based on principal contributions relative to purchase price",
+    "formula": "CP share of appreciation = (CP principal ÷ purchase price) × appreciation during marriage",
+    "whyThisRegime": "Property was owned separately before marriage with no transmutation to community property"
+  },
+  "limitations": [
+    "Does not account for potential refinancing",
+    "Assumes no transmutation agreements",
+    "Does not include capital improvements analysis",
+    "Excludes attorney fee considerations under Fam. Code § 2030"
+  ]
+}

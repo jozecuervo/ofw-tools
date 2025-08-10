@@ -1,5 +1,9 @@
 ## OFW Tools: Divorce and Communication Analysis Toolkit
 
+### ⚠️ IMPORTANT LEGAL DISCLAIMER
+
+**This toolkit is for educational and calculation purposes only and does not constitute legal advice.** Property division, family law issues, and communication analysis involve complex legal and factual determinations that vary by jurisdiction and individual circumstances. Always consult with a qualified family law attorney before making decisions based on these calculations or analysis. The tools do not account for many factors that may affect legal outcomes, including transmutations, agreements, refinances, improvements, or other legal doctrines.
+
 ### Overview
 
 Local-first Node.js CLIs that streamline common family-law workflows. These tools help you quickly analyze communications, generate calendars, compute property/equity figures, and now parse paychecks — all on your machine for privacy and speed. Outputs favor simple formats (CSV/Markdown/JSON) that drop easily into exhibits or spreadsheets.
@@ -134,39 +138,156 @@ Pass arguments after `--`.
 
 ### 6) Moore/Marsden Calculator (`moore-marsden.js`)
 
-- **Purpose**: Compute Separate Property (SP) and Community Property (CP) interests using the Moore/Marsden worksheet with clear intermediate values and percentages.
+- **Purpose**: Compute Separate Property (SP) and Community Property (CP) interests using the classic Moore/Marsden worksheet with show‑your‑work lines and percentages.
 - **Config**: Provide inputs via `source_files/moore-marsden.config.json` (gitignored) or pass `--config <path>`. If no config is provided, neutral defaults are used.
-- **Output**: Console worksheet (lines 1–13). Optionally emit a JSON worksheet via `--out-json`.
-- **Notes**:
-  - Community share of appreciation during marriage is computed as (community principal reduction ÷ original purchase price) × (FMV at division − FMV at marriage).
-  - Only principal reduction counts toward this ratio; do not include interest, taxes, insurance, or routine maintenance.
-- **Options**:
-  - `--summary`: print only the SP/CP interests (hide lines 1–11)
-  - `--no-explain`: hide the explanatory header and citations
-- **Run**:
-  ```bash
-  # With defaults (illustrative numbers)
-  npm run moore-marsden
+- **Output**: Console worksheet (Lines 1–13) and optional JSON via `--out-json` containing `{ inputs, worksheet }`.
 
-  # With your local config (gitignored by default) and JSON output
-  npm run moore-marsden -- --config ./source_files/moore-marsden.config.json --out-json ./output/moore-marsden.json
-  ```
- - **Citations**: Moore, Marsden; Family Code §§ 760, 770, 2640.
+#### Legal context and applicability
+- **Authorities**: In re Marriage of Moore (1980) 28 Cal.3d 366; In re Marriage of Marsden (1982) 130 Cal.App.3d 426; Fam. Code §§ 760 (CP presumption), 770 (SP), 2640 (SP reimbursements).
+- **What this models**: Premarital ownership with a single original acquisition loan. Community acquires a pro tanto share of appreciation during marriage based on the community’s principal reduction over the original purchase price (PP).
+- **What this does not model**:
+  - Joint‑title acquisitions during marriage → typically a §2640 reimbursement regime (no SP slice of appreciation absent transmutation).
+  - Refinances/HELOCs/capital improvements/transmutations → out of scope for this worksheet and flagged with warnings.
+
+#### Formulae (implemented)
+- **Community share of appreciation during marriage**: \( (\text{CP principal reduction} \div \text{PP}) \times (\text{FMV@Division} - \text{FMV@Marriage}) \)
+- **SP interest**: down payment + SP principal + pre‑marital appreciation + SP share of appreciation
+- Only principal reduction counts in the ratio; interest, taxes, insurance, and routine maintenance are excluded.
+
+#### Inputs (JSON fields)
+- `purchasePrice` (PP)
+- `downPayment`
+- `paymentsWithSeparateFunds` — total SP principal reduction (includes premarital SP and any traced SP during marriage)
+- Optional split SP fields: `spPrincipalPreMarriage`, `spPrincipalDuringMarriage` (if provided, they are summed into `paymentsWithSeparateFunds` for Line 3)
+- `paymentsWithCommunityFunds` — CP principal reduction during marriage
+- `fairMarketAtMarriage` (FMV@Marriage)
+- `fairMarketAtDivision` (FMV@Division)
+- Optional reconciliation inputs: `originalLoan` (L0 implied at purchase), `loanAtDivision` (L2 at valuation)
+- Optional context: `acquisitionContext`: `premaritalOwner` (default) | `jointTitleDuringMarriage`
+
+#### CLI options
+- `--summary` — print only Lines 12–13 (SP/CP interests)
+- `--no-explain` — hide explanatory header and citations
+- `--out-json <path>` — write `{ inputs, worksheet }` JSON to the given path
+- `--context <acquisitionContext>` — override `config.acquisitionContext`
+- `--refi` — user hint to print an additional refinance/HELOC scope warning
+
+#### Validations and warnings (what you’ll see and why)
+- **Purchase price must be > 0**: throws if PP ≤ 0.
+- **CP proportion clamp 0..1**: Moore/Marsden ratio is clamped after computing CP principal ÷ PP to avoid pathological inputs; a separate sanity warning prints if CP principal > PP.
+- **Negative appreciation during marriage**: warns if `FMV@Division < FMV@Marriage`; values still compute.
+- **Context warning**: if `acquisitionContext === 'jointTitleDuringMarriage'`, prints that §2640 reimbursement is the proper regime absent a transmutation.
+- **Refi/HELOC scope**: warns if `--refi` is passed or `purchasePrice < downPayment` is detected.
+- **Loan reconciliation (when `originalLoan` and `loanAtDivision` are provided)**:
+  - Warns if provided `originalLoan` ≠ implied `PP − downPayment`.
+  - Warns if equity from worksheet `(downPayment + SP principal + CP principal) + (FMV@Division − PP)` does not match `FMV@Division − loanAtDivision` within a penny — indicates possible refinance/improvements/context mismatch.
+
+#### Example
+```json
+{
+  "purchasePrice": 435000,
+  "downPayment": 132179.18,
+  "spPrincipalPreMarriage": 25696.15,
+  "spPrincipalDuringMarriage": 0,
+  "paymentsWithCommunityFunds": 9936.09,
+  "fairMarketAtMarriage": 665000,
+  "fairMarketAtDivision": 750225.81,
+  "originalLoan": 302820.82,
+  "loanAtDivision": 290000,
+  "acquisitionContext": "premaritalOwner"
+}
+```
+
+Run:
+```bash
+npm run moore-marsden -- --config ./source_files/moore-marsden.config.json --out-json ./output/moore-marsden.json
+```
+
+Output mapping (abbrev):
+- Line 7: pre‑marital appreciation = FMV@Marriage − PP
+- Line 8: appreciation during marriage = FMV@Division − FMV@Marriage
+- Line 9: CP proportion = CP principal ÷ PP
+- Line 10: CP share of appreciation = Line 8 × Line 9
+- Line 11: SP share of appreciation = Line 8 − Line 10
+- Line 12: SP Interest = Down Payment + SP Principal + Line 7 + Line 11
+- Line 13: CP Interest = CP Principal + Line 10
+
+Legal note: This worksheet is designed for the Moore/Marsden context (premarital owner, single original loan). Joint‑title acquisitions during marriage are typically handled under Fam. Code §2640 reimbursement rules. Consult counsel for refinances, HELOCs, capital improvements, or transmutation issues.
 
 ### 7) Apportionment & Buyout with Credits (`apportionment-calc.js`)
 
-- **Purpose**: Pro rata apportionment of equity (separate vs. community) and illustrative buyout calculations incorporating Watts (use) credits, Epstein reimbursements, and attorney fees.
-- **Config**: You can supply a local config at `source_files/apportionment.config.json` (gitignored) or pass `--config <path>`.
-- **Output**: Console breakdown and computed buyout; optional machine-readable JSON via `--out-json`.
+- **Purpose**: Compute SP/CP interests using a Moore/Marsden-style allocation tied to the original purchase price (PP), then apply Watts (exclusive-use) and Epstein (post‑separation principal) as separate credit ledgers. Attorney’s fees are not netted into the buyout here.
+- **Config**: Provide a local config at `source_files/apportionment.config.json` (gitignored). An example is included at `source_files/apportionment.config.example.json` — copy it and edit for your case.
+- **Output**: Console breakdown and computed buyout; optionally emit JSON via `--out-json`.
 - **Run**:
   ```bash
   # With defaults (illustrative numbers)
   npm run apportionment
 
-  # With your local config (gitignored by default) and JSON output
+  # With your local config and JSON output
   npm run apportionment -- --config ./source_files/apportionment.config.json --out-json ./output/apportionment.json
   ```
- - **Notes**: Neutral, even-number example defaults to illustrate formulas. Future enhancement: toggles for Epstein-only vs. equity allocation and FRV offsets.
+- **Inputs** (JSON):
+  - **Moore/Marsden**: `houseValueAtPurchase` (PP), `appraisedValue` (FMV), `mortgageAtPurchase` (L0), `mortgageAtSeparation` (L1), `principalPaidDuringMarriage` (Cp), `yourSeparateInterest` (Sy), `herSeparateInterest` (Sh)
+  - **Epstein** (post‑sep principal): `principalPaidAfterSeparationByYou`, `principalPaidAfterSeparationByHer`
+  - **Watts** (exclusive use): `fairMonthlyRentalValue`, `monthsSinceSeparation`, `occupant` ('you'|'her')
+  - **Watts offsets**: `monthlyMortgageInterest`, `monthlyPropertyTaxes`, `monthlyInsurance`, `monthlyNecessaryRepairs`
+  - **Acquisition context**: `acquisitionContext` one of:
+    - `premaritalOwner` (default): classic Moore/Marsden allocation; appreciation allocated by PP denominator across CP and traceable SP buckets.
+    - `jointTitleDuringMarriage`: §2640 regime — reimburse traceable SP contributions dollar‑for‑dollar (down payment, SP principal, SP improvements); all appreciation/remainder equity treated as CP absent transmutation.
+    - `separateTitleDuringMarriage`: treat like Moore/Marsden unless you have a written transmutation; fact‑specific.
+  - **Improvements (optional)**: `cpImpr`, `spImprYou`, `spImprHer`. For simple use, they’re added to CP/SP buckets. For larger capital improvements, consult counsel about basis adjustments.
+- **Notes**:
+  - CP share of appreciation during marriage is computed as (CP principal reduction ÷ PP) × (FMV − PP). Separate interests get analogous shares using Sy and Sh over PP.
+  - Post‑separation principal is treated as Epstein reimbursement to the paying spouse; it is not converted into an equity “share.”
+  - Watts is modeled as ½ FRV × months, net of carrying‑cost offsets paid by the occupant; applied after property interests.
+  - Data integrity checks: warns if `Cp` differs from `L0 − L1`, throws if PP ≤ 0, and warns if baseline equity doesn’t match `FMV − L2` within a penny.
+#### Enhanced Features:
+- **Input Validation**: Comprehensive validation with granular error messages and recovery suggestions
+- **Dry Run Mode**: Use `--dry-run` to validate inputs without performing calculations
+- **Enhanced Error Handling**: Detailed warnings for edge cases like negative appreciation, refinancing complications, and bucket sum mismatches
+- **Metadata Output**: Results include regime explanation and calculation details
+- **Edge Case Support**: Handles negative appreciation, zero appreciation, and complex scenarios with appropriate warnings
+
+#### New CLI Options:
+```bash
+# Dry run validation
+npm run apportionment -- --config ./config.json --dry-run
+
+# Skip input validation (not recommended)
+npm run apportionment -- --no-validate
+
+# Enhanced help with edge case documentation
+npm run apportionment -- --help
+```
+
+### 8) Comprehensive Mocks and Testing (`mocks/` folder)
+
+- **Purpose**: Comprehensive testing and demo data for the apportionment system, including Moore/Marsden and Family Code §2640 scenarios
+- **Structure**:
+  - `mocks/data/`: Sample property data files for different legal regimes and edge cases
+  - `mocks/demos/`: Interactive demo scripts and educational walkthroughs  
+  - `mocks/fixtures/`: Test data for boundary conditions and performance testing
+  - `mocks/docs/`: Annotated examples and scenario explanations
+- **Quick Start**:
+  ```bash
+  # Interactive regime comparison demo
+  node ./mocks/demos/regime-comparison.js
+  
+  # Step-by-step Moore/Marsden educational walkthrough
+  node ./mocks/demos/step-by-step-walkthrough.js
+  
+  # Test with sample Moore/Marsden data
+  npm run apportionment -- --config ./mocks/data/moore-marsden-basic.json
+  
+  # Test with Family Code §2640 scenario
+  npm run apportionment -- --config ./mocks/data/section-2640-basic.json
+  
+  # Test edge case: negative appreciation
+  npm run apportionment -- --config ./mocks/data/edge-case-negative-appreciation.json --dry-run
+  ```
+- **Educational Value**: Each mock scenario includes legal citations, factual assumptions, expected results, and limitations
+- **Legal Context**: All scenarios include disclaimers and appropriate case law references
 
 ### 8) DissoMaster Spousal Support Calculator (`dissomaster.js`)
 

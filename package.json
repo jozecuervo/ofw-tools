@@ -1,6 +1,6 @@
 {
   "name": "ofw-tools",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "This repository contains a set of small, focused tools that help analyze communications, plan visitation schedules, and perform basic family-law-related calculations (Moore/Marsden, apportionment). These are optimized for quick, local use as you prepare materials for court.",
   "main": "index.js",
   "scripts": {
@@ -13,6 +13,7 @@
     "nth-week": "node nth-week.js",
     "moore-marsden": "node moore-marsden.js",
     "apportionment": "node apportionment-calc.js",
+    "apportionment:ledger": "node apportionment-ledger.js",
     "dissomaster": "node dissomaster.js",
     "imessage": "node imessage.js",
     "imessage:install": "brew install imessage-exporter",

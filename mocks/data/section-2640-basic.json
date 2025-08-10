@@ -1,0 +1,60 @@
+{
+  "scenario": "Family Code §2640 - Joint Title During Marriage",
+  "description": "Property acquired during marriage in joint title with separate property down payment contributions from both spouses. Under §2640, separate contributions are reimbursed dollar-for-dollar.",
+  "legalBasis": {
+    "regime": "Family Code §2640",
+    "caseCitations": [
+      "Cal. Fam. Code § 2640(a)-(b) (separate property reimbursements)",
+      "Cal. Fam. Code § 2581 (joint title presumption)",
+      "In re Marriage of Lucas (1980) 27 Cal.3d 808 (anti-Lucas doctrine)"
+    ],
+    "applicableStatutes": [
+      "Cal. Fam. Code § 2640 (reimbursement right)",
+      "Cal. Fam. Code § 2581 (joint title creates community property)",
+      "Cal. Fam. Code § 760 (community property presumption)"
+    ]
+  },
+  "factualAssumptions": {
+    "acquisitionContext": "jointTitleDuringMarriage",
+    "titleHistory": "Property acquired during marriage and held in joint title",
+    "downPaymentSource": "Traceable separate property funds from both spouses",
+    "transmutation": "No written transmutation agreement converting appreciation to separate property",
+    "improvements": "No major capital improvements beyond routine maintenance",
+    "tracing": "Clear documentation of separate property sources"
+  },
+  "calculations": {
+    "houseValueAtPurchase": 600000,
+    "appraisedValue": 850000,
+    "mortgageAtPurchase": 480000,
+    "mortgageAtSeparation": 420000,
+    "principalPaidDuringMarriage": 60000,
+    "yourSeparateInterest": 80000,
+    "herSeparateInterest": 40000,
+    "acquisitionContext": "jointTitleDuringMarriage"
+  },
+  "expectedResults": {
+    "regime": "Family Code §2640",
+    "yourReimbursement": 80000,
+    "herReimbursement": 40000,
+    "communityEquity": 310000,
+    "totalEquity": 430000,
+    "note": "All appreciation and principal reduction treated as community property"
+  },
+  "educationalNotes": {
+    "keyPrinciple": "Joint title during marriage creates community property; separate contributions reimbursed dollar-for-dollar",
+    "antiLucasDoctrine": "Without written transmutation, appreciation cannot be claimed as separate property",
+    "whyThisRegime": "Joint title acquisition during marriage triggers §2640 reimbursement rather than Moore/Marsden apportionment"
+  },
+  "commonMistakes": [
+    "Applying Moore/Marsden to joint title acquisitions during marriage",
+    "Claiming separate property interest in appreciation without transmutation",
+    "Failing to trace separate property contributions adequately",
+    "Confusing reimbursement rights with ownership interests"
+  ],
+  "limitations": [
+    "Does not account for transmutation agreements",
+    "Assumes adequate tracing documentation",
+    "Does not include refinancing complications",
+    "Excludes post-separation exclusive use considerations"
+  ]
+}
