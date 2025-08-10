@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.4.1] - 2025-08-10
+
+PR: [#10](https://github.com/jozecuervo/ofw-tools/pull/10)
+
+### Changed
+- Move OFW PDF Analyzer CLI from `index.js` to `ofw.js`.
+- Add `runCli()` export for testability and reuse.
+- Keep `index.js` as a thin wrapper delegating to `ofw.js` and re-exporting internals.
+- No behavior changes; existing npm scripts and `main` continue to work. All tests green.
+
 ## [1.4.0] - 2025-08-10
 
 PR: [#8](https://github.com/jozecuervo/ofw-tools/pull/8)
