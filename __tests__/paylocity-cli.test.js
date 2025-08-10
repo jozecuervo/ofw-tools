@@ -37,10 +37,10 @@ describe('paylocity CLI', () => {
 
     // Run CLI in a child process with --use-txt
     const { spawnSync } = require('node:child_process');
-    const res = spawnSync(process.execPath, [cliPath, srcDir, '--use-txt'], { encoding: 'utf8' });
+    const res = spawnSync(process.execPath, [cliPath, srcDir, '--use-txt'], { encoding: 'utf8', cwd: tmpDir });
     expect(res.status).toBe(0);
 
-    const outCsv = path.join(srcDir, 'paychecks.csv');
+    const outCsv = path.join(tmpDir, 'output', 'paychecks.csv');
     const csv = fs.readFileSync(outCsv, 'utf8').trim();
     const lines = csv.split('\n');
     expect(lines[0]).toMatch(/^File,Pay Date,Period Start,Period End,/);

@@ -18,7 +18,8 @@
     "imessage": "node imessage.js",
     "imessage:install": "brew install imessage-exporter",
     "imessage:export": "imessage-exporter --export-type plain-text --output-dir ./output",
-    "paylocity": "node paylocity.js"
+    "paylocity": "node paylocity.js",
+    "paylocity:summary": "node paylocity-summary.js"
   },
   "author": "",
   "license": "CC0-1.0",

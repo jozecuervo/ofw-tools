@@ -319,9 +319,11 @@ npm run apportionment -- --help
 
 ### 9) Paylocity Paychecks → CSV (`paylocity.js`)
 
-- **Purpose**: Scan a folder of Paylocity paycheck PDFs and produce a single CSV with one row per paycheck.
+- **Purpose**: Scan a folder of Paylocity paycheck PDFs and produce a single CSV with one row per paycheck. Then, generate a summary CSV with monthly gross analysis, using the 26/12 method.
 - **Input**: Path to a folder containing `.pdf` paystubs exported from Paylocity.
-- **Output**: `same-folder/paychecks.csv` by default; override with `--out <file.csv>`.
+- **Output**: 
+  - Raw data `output/paychecks.csv` by default; override with `--out <file.csv>`.
+  - Monthly gross analysis: `output/monthly-gross-analysis.csv`
 - **Run**:
   ```bash
   npm run paylocity -- /absolute/path/to/paystubs
