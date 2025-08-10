@@ -4,7 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.4.0] - 2025-08-10
+
+PR: [#8](https://github.com/jozecuervo/ofw-tools/pull/8)
+
+### Added
+- Paylocity paychecks → CSV CLI (`paylocity.js`) and parser (`utils/paylocity/parser.js`): scan a folder of Paylocity paycheck PDFs and produce a single CSV (one row per paycheck).
+- `--debug-text` flag: writes normalized PDF text to `<source>/_debug_text/` for troubleshooting.
+
+### Changed
+- Parser robustness: handles month-name dates (e.g., "August 1, 2025"), numeric dates anywhere in line, "Period Beginning/Ending" labels, negative/parentheses amounts, compact tax-line formats (FIT/SS/MED), and line-wrapped labels.
+- README updated with usage and options for the new tool.
+
+### Scripts
+- `npm run paylocity` wired to `node paylocity.js`.
+
+### Tests
+- Existing suites remain green (no regressions).
+
 ## [1.3.0] - 2025-08-10
+
+PR: [#7](https://github.com/jozecuervo/ofw-tools/pull/7)
 
 ### Added
 - Utilities split for maintainability and testing:
@@ -105,7 +125,7 @@ PR: [#3](https://github.com/jozecuervo/ofw-tools/pull/3)
 - Unit tests in `__tests__/nth-week.test.js` (leap years, tallies, ranges).
 
 ### Visitation Calendar (`visitation-cal.js`)
-- Anchor-based Week 1 (`--anchor <weekday>`, default Friday); calendar grid showing V (weekend) and V/Z (Wed visit/Zoom).
+- Anchor-based Week 1 (`--anchor <weekday>`, default Friday); calendar grid showing V (weekend) and V/Z (Wednesday visit/Zoom).
 - Monthly summaries of Wed visits/zooms and weekend visits with exact dates.
 - Refactored pure functions, `runCli()`, and JSDoc.
 - Unit tests in `__tests__/visitation-cal.test.js` (anchor and week alignment).
