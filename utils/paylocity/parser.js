@@ -16,7 +16,6 @@ const AMOUNT_REGEX_PATTERN = "\\(?-?\\$?([0-9]{1,3}(?:,[0-9]{3})*(?:\\.[0-9]{2})
 
 /**
  * Parse a US currency string into a Number.
- * Parses a US currency string into a Number.
  *
  * Accepts optional leading '$', thousands separators (commas), spaces, and negative values
  * (either with a leading '-' or wrapped in parentheses).
