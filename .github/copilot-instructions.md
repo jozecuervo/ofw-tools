@@ -23,6 +23,7 @@ description: Overarching instructions for AI assistance in this repo
 - Code review: `prompts/code-review.md`
 - Node CLI patterns: `prompts/js-cli-tools.md`
 - OFW parsing and clusters: `prompts/ofw-parsing.md`
+- Paylocity parsing: `prompts/paylocity-parser.md`
 - Divorce Navigator (persona, tone, I/O): `prompts/divorce-navigator.md`
 - Legal review and escalation: `prompts/legal-review.md`, `prompt-snippets/legal-escalation-checklist.md`
 - Reusable snippets: `prompt-snippets/*`

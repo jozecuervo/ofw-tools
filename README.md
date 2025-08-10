@@ -43,6 +43,7 @@ Pass arguments after `--`.
 - Apportionment & buyout calculator (example values): `npm run apportionment`
 - iMessage parser with sentiment: `npm run imessage -- /absolute/path/to/imessage.txt`
 - Paylocity paychecks → CSV: `npm run paylocity -- /absolute/path/to/folder/of/pdfs`
+   - Tips: `--debug-text` writes normalized text to `<source>/_debug_text/`; `--use-txt` reads `.txt` files for testing.
 
 ---
 
