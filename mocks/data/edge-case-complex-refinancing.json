@@ -1,0 +1,77 @@
+{
+  "scenario": "Complex Refinancing - Requires Manual Review",
+  "description": "Property with refinancing during marriage that complicates Moore/Marsden analysis. This scenario demonstrates the tool's limitations and need for legal counsel.",
+  "legalBasis": {
+    "regime": "Moore/Marsden (with complications)",
+    "caseCitations": [
+      "In re Marriage of Moore (1980) 28 Cal.3d 366",
+      "In re Marriage of Marsden (1982) 130 Cal.App.3d 426"
+    ],
+    "applicableStatutes": [
+      "Cal. Fam. Code § 770 (separate property)",
+      "Cal. Fam. Code § 2640 (contributions to acquisition)"
+    ]
+  },
+  "factualAssumptions": {
+    "acquisitionContext": "premaritalOwner",
+    "complicatingFactors": [
+      "Property refinanced during marriage",
+      "Cash taken out for other purposes",
+      "Different loan terms and interest rates",
+      "Possible changes in title or obligations"
+    ],
+    "documentation": "Original loan terms may not reflect current mortgage structure",
+    "legalComplexity": "Requires analysis of refinancing characterization"
+  },
+  "calculations": {
+    "houseValueAtPurchase": 400000,
+    "downPayment": 80000,
+    "fairMarketAtMarriage": 500000,
+    "appraisedValue": 650000,
+    "mortgageAtPurchase": 320000,
+    "mortgageAtSeparation": 380000,
+    "principalPaidDuringMarriage": -60000,
+    "yourSeparateInterest": 80000,
+    "herSeparateInterest": 0,
+    "acquisitionContext": "premaritalOwner",
+    "refinancingDetails": {
+      "originalLoan": 320000,
+      "refinancedLoan": 420000,
+      "cashOut": 100000,
+      "refinanceDate": "During marriage",
+      "cashUse": "Home improvements and other purposes"
+    }
+  },
+  "expectedResults": {
+    "toolWarning": "Refinancing detected - manual legal review required",
+    "limitedReliability": "Standard Moore/Marsden may not apply",
+    "recommendedAction": "Consult family law attorney for refinancing analysis",
+    "complexity": "Cash-out refinancing affects characterization analysis"
+  },
+  "educationalNotes": {
+    "whyComplicated": "Refinancing can change the character of debt and equity interests",
+    "cashOutIssues": "Use of refinancing proceeds affects community vs separate property analysis",
+    "titleConsiderations": "Refinancing may have required spousal consent or title changes",
+    "toolLimitations": "Automated calculation cannot account for refinancing complexities"
+  },
+  "requiredLegalAnalysis": [
+    "Character of refinancing proceeds",
+    "Spousal consent requirements for refinancing",
+    "Community vs separate property use of cash-out funds",
+    "Impact on Moore/Marsden purchase price denominator",
+    "Potential transmutation issues",
+    "Post-separation payment characterization"
+  ],
+  "testingObjectives": [
+    "Verify tool detects refinancing scenarios",
+    "Ensure appropriate warnings are generated",
+    "Test handling of negative principal reduction",
+    "Validate tool limitations are clearly communicated"
+  ],
+  "expectedBehavior": {
+    "warningGeneration": "Tool should warn about refinancing complications",
+    "calculationLimitations": "Results should be marked as potentially unreliable",
+    "recommendedAction": "User should be directed to seek legal counsel",
+    "documentationRequest": "Tool should request additional refinancing details"
+  }
+}
