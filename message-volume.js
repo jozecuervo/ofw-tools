@@ -4,6 +4,7 @@ const {
   formatDateMMDDYYYY,
   formatTimeHHMM,
 } = require('./utils/date');
+const { analyzeRapidFireMessages } = require('./utils/ofw/clusters');
 
 function printHelp() {
   console.log(`\nUsage: node message-volume.js <path-to-json-file> [--sender "Name"] [--threshold-min 30] [--min-messages 3]\n\nOptions:\n  --sender          Sender name to analyze (exact match). Default: "José Hernandez"\n  --threshold-min   Max minutes between consecutive messages to be in the same cluster. Default: 30\n  --min-messages    Minimum messages per cluster to include in output. Default: 3\n  -h, --help        Show this help\n`);
@@ -29,6 +30,13 @@ if (!filePath) {
   process.exit(1);
 }
 
+// Enforce JSON input explicitly
+if (!filePath.toLowerCase().endsWith('.json')) {
+  console.error('Expected a JSON file as input. Run ofw:analyze first to generate JSON.');
+  printHelp();
+  process.exit(1);
+}
+
 // Load and parse JSON data
 const messages = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
@@ -39,36 +47,7 @@ const formatDate = formatDateMMMddYYYY;
 const formatDate2 = formatDateMMDDYYYY;
 const formatTime = formatTimeHHMM;
 
-function analyzeRapidFireMessages(messages, senderName, thresholdSeconds = 60 * 30) { // Default threshold: 30 minutes
-  const senderMessages = messages
-    .filter(msg => msg.sender === senderName)
-    .sort((a, b) => parseSentDate(a.sentDate) - parseSentDate(b.sentDate));
-
-  const clusters = [];
-  let currentCluster = [];
-
-  senderMessages.forEach((msg, idx) => {
-    if (currentCluster.length === 0) {
-      currentCluster.push(msg);
-    } else {
-      const lastMessageTime = parseSentDate(currentCluster[currentCluster.length - 1].sentDate);
-      const currentMessageTime = parseSentDate(msg.sentDate);
-
-      if ((currentMessageTime - lastMessageTime) / 1000 <= thresholdSeconds) {
-        currentCluster.push(msg);
-      } else {
-        if (currentCluster.length > 1) clusters.push([...currentCluster]);
-        currentCluster = [msg];
-      }
-    }
-
-    if (idx === senderMessages.length - 1 && currentCluster.length > 1) {
-      clusters.push([...currentCluster]);
-    }
-  });
-
-  return clusters;
-}
+// Cluster logic moved to utils/ofw/clusters
 
 const thresholdSeconds = options.thresholdMin * 60;
 let visualization = '';

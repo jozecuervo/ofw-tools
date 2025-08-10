@@ -1,9 +1,31 @@
 ## Changelog
 
-
 All notable changes to this project will be documented in this file.	
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
+
+## [1.3.0] - 2025-08-10
+
+### Added
+- Utilities split for maintainability and testing:
+  - `utils/pdf.js`: low-level PDF text extraction (`parsePdf`).
+  - `utils/ofw/parser.js`: `parseMessage`, `processMessages`.
+  - `utils/ofw/stats.js`: `accumulateStats` (weekly/totals aggregation).
+  - `utils/ofw/clusters.js`: `analyzeRapidFireMessages`.
+  - `utils/output/markdown.js`, `utils/output/csv.js`: pure string formatters.
+  - `utils/fs.js`: `ensureDir`, `writeFile`, `writeJson` for centralized file I/O.
+- New unit tests (pure and fast):
+  - `__tests__/ofw-parser.test.js`, `__tests__/ofw-stats.test.js`, `__tests__/ofw-output.test.js`, `__tests__/ofw-clusters.test.js`, `__tests__/fs-utils.test.js`.
+
+### Changed
+- `index.js` now delegates parsing, stats, and output to new utils; behavior unchanged.
+- `message-volume.js` imports clusters util and enforces JSON input (use `ofw:analyze` first).
+- `imessage.js` moves CLI parsing under `require.main` to avoid `process.exit` on import in tests.
+- Minor fix in `visitation-cal.js` wrapper functions (syntax/brace closure).
+- Centralized file writes across scripts via `utils/fs.js`.
+
+### Tests
+- All suites green (10/10): adds coverage for parser, stats, output, clusters, and fs helpers.
 
 ## [1.2.1] - 2025-08-10
 
@@ -25,7 +47,7 @@ PR: [#6](https://github.com/jozecuervo/ofw-tools/pull/6)
 ### Tests
 - All affected unit tests run green: `nth-week`, `visitation-cal`, `imessage`, `moore-marsden`, and OFW parser boundary test.
 
-## 1.2.0 - 2025-08-09
+## [1.2.0] - 2025-08-09
 
 PR: [#5](https://github.com/jozecuervo/ofw-tools/pull/5)
 

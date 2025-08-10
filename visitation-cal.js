@@ -37,6 +37,7 @@ const {
  */
 function getFirstAnchorOfMonthLocal(year, month, anchorOrdinal) {
     return getFirstAnchorOfMonth(year, month, anchorOrdinal);
+}
 
 /**
  * Calculate the start (Sunday) of Week 1 (first week containing the anchor weekday).
@@ -47,7 +48,7 @@ function getFirstAnchorOfMonthLocal(year, month, anchorOrdinal) {
  */
 function getFirstWeekStartLocal(year, month, anchorOrdinal) {
     return getFirstWeekStart(year, month, anchorOrdinal);
-// Removed unnecessary wrapper function getFirstWeekStartLocal
+}
 
 /**
  * Calculate the 5 court weeks for a given month.

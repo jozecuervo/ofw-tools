@@ -257,7 +257,8 @@ const jsonOutIdx = argv.indexOf('--out-json');
 if (jsonOutIdx !== -1 && argv[jsonOutIdx + 1]) {
     const outPath = argv[jsonOutIdx + 1];
     try {
-        require('fs').writeFileSync(outPath, JSON.stringify({ totals, ratios, shares, credits, buyout }, null, 2));
+        const { writeJson } = require('./utils/fs');
+        writeJson(outPath, { totals, ratios, shares, credits, buyout });
         console.log(`\nWrote detailed results to ${outPath}`);
     } catch (e) {
         console.error('Failed to write --out-json file:', e.message);

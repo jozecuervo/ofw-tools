@@ -154,24 +154,21 @@ function parseIMessageFile(filePath) {
  */
 function writeMessagesToFile(groupedMessages, outDir) {
     try {
-        fs.mkdirSync(outDir, { recursive: true });
+        const { ensureDir, writeJson } = require('./utils/fs');
+        ensureDir(outDir);
     } catch (e) {
         console.error(`Failed to create output directory ${outDir}:`, e);
         process.exit(1);
     }
     Object.entries(groupedMessages).forEach(([year, messages]) => {
         const outPath = path.join(outDir, `imessage-export-${year}.json`);
-        fs.writeFile(
-            outPath,
-            JSON.stringify(messages, null, 2),
-            (err) => {
-                if (err) {
-                    console.error(`Error writing file for year ${year}:`, err);
-                    return;
-                }
-                console.log(`Messages for year ${year} written to ${outPath}`);
-            }
-        );
+        try {
+            const { writeJson } = require('./utils/fs');
+            writeJson(outPath, messages);
+            console.log(`Messages for year ${year} written to ${outPath}`);
+        } catch (err) {
+            console.error(`Error writing file for year ${year}:`, err);
+        }
     });
 }
 
@@ -190,21 +187,21 @@ function printHelp() {
     console.log(`\nUsage: node imessage.js <path-to-imessage.txt> [--out-dir <directory>]\n\nOptions:\n  --out-dir   Output directory for JSON files (default: input file directory)\n  -h, --help  Show this help\n`);
 }
 
-const rawArgs = process.argv.slice(2);
-if (rawArgs.includes('-h') || rawArgs.includes('--help') || rawArgs.length === 0) {
-    printHelp();
-    process.exit(rawArgs.length === 0 ? 1 : 0);
-}
-
-const inputPath = rawArgs[0];
-let outDir = path.join(__dirname, 'output');
-for (let i = 1; i < rawArgs.length; i++) {
-    if (rawArgs[i] === '--out-dir') {
-        outDir = rawArgs[++i];
-    }
-}
-
 function runCli() {
+    const rawArgs = process.argv.slice(2);
+    if (rawArgs.includes('-h') || rawArgs.includes('--help') || rawArgs.length === 0) {
+        printHelp();
+        process.exit(rawArgs.length === 0 ? 1 : 0);
+    }
+
+    const inputPath = rawArgs[0];
+    let outDir = path.join(__dirname, 'output');
+    for (let i = 1; i < rawArgs.length; i++) {
+        if (rawArgs[i] === '--out-dir') {
+            outDir = rawArgs[++i];
+        }
+    }
+
     parseIMessageFile(inputPath)
         .then(groupedMessages => {
             console.log(`Writing parsed messages to directory: ${path.resolve(outDir)}`);

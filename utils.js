@@ -1,5 +1,6 @@
 const fs = require("fs");
-const pdf = require("pdf-parse");
+const { parsePdf } = require("./utils/pdf");
+const { writeFile, writeJson, ensureDir } = require('./utils/fs');
 const {
     getWeekString,
     parseDate,
@@ -13,33 +14,14 @@ const {
  * @param {string} filePath - The path to the output file.
  * @param {string} data - The data to write to the file.
  */
-function writeFile(filePath, data) {
-    try {
-        fs.writeFileSync(filePath, data);
-        // console.log(`File written to: ${filePath}`);
-    } catch (error) {
-        console.error(`Failed to write to ${filePath}:`, error);
-    }
-}
+// writeFile moved to utils/fs; re-exported below
 
-/**
- * Parses the PDF file at the specified file path.
- * @param {string} filePath - The path to the PDF file.
- * @return {Promise<string>} - A promise that resolves to the text content of the PDF file.
- */
-async function parsePdf(filePath) {
-    try {
-        const dataBuffer = fs.readFileSync(filePath);
-        const data = await pdf(dataBuffer);
-        return data.text;
-    } catch (error) {
-        console.error(`Failed to parse PDF at ${filePath}:`, error);
-        throw error; // Re-throw the error to be caught by the calling function
-    }
-}
+// parsePdf moved to `utils/pdf.js`
 
 exports.getWeekString = getWeekString;
 exports.parsePdf = parsePdf;
 exports.parseDate = parseDate;
 exports.formatDate = formatDate;
 exports.writeFile = writeFile;
+exports.writeJson = writeJson;
+exports.ensureDir = ensureDir;

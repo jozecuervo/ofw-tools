@@ -253,7 +253,8 @@ const outIdx = argv.indexOf('--out-json');
 if (outIdx !== -1 && argv[outIdx + 1]) {
     const outPath = argv[outIdx + 1];
     try {
-        fs.writeFileSync(outPath, JSON.stringify({ inputs: input, worksheet }, null, 2));
+        const { writeJson } = require('./utils/fs');
+        writeJson(outPath, { inputs: input, worksheet });
         console.log(`\nWrote worksheet JSON to ${outPath}`);
     } catch (e) {
         console.error('Failed to write --out-json file:', e.message);
