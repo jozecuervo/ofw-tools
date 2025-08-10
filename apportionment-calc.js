@@ -106,7 +106,7 @@ function apportionEquity({ acquisitionContext, PP, FMV, L0, L1, L2, Sy, Sh, cpIm
         return { regime: '2640', you: { equity: spReimbYou }, her: { equity: spReimbHer }, cp: { equity: cpEquity }, mm: null };
     }
 
-    const Cp = ((CpFromLoans > 0 ? CpFromLoans : (principalPaidDuringMarriageProvided ?? 0))) + (cpImpr ?? 0);
+    const Cp = getCommunityPrincipal(CpFromLoans, principalPaidDuringMarriageProvided, cpImpr);
     const SyAdj = (Sy ?? 0) + (spImprYou ?? 0);
     const ShAdj = (Sh ?? 0) + (spImprHer ?? 0);
     const mm = computeMooreMarsdenThreeBucket(PP, FMV, Cp, SyAdj, ShAdj);
