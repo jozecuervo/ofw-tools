@@ -2,7 +2,24 @@
 
 ### Overview
 
-This repository contains a set of small, focused tools that help analyze communications, plan visitation schedules, and perform basic family-law-related calculations (Moore/Marsden, apportionment). These are optimized for quick, local use as you prepare materials for court.
+Local-first Node.js CLIs that streamline common family-law workflows. These tools help you quickly analyze communications, generate calendars, compute property/equity figures, and now parse paychecks — all on your machine for privacy and speed. Outputs favor simple formats (CSV/Markdown/JSON) that drop easily into exhibits or spreadsheets.
+
+What’s included:
+- Messages and evidence prep
+  - OFW Messages PDF → JSON/CSV summaries with weekly stats and console Markdown
+  - iMessage text export → per-year JSON with sentiment metrics
+- Scheduling and analysis
+  - Visitation calendar helper with court-style week logic and annotated grids
+  - Fifth-week analyzer to quantify months with “5th” occurrences of anchor weekdays
+- Property and finance calculators
+  - Moore/Marsden worksheet and apportionment/buyout with credits (Watts/Epstein/fees)
+- Payroll parsing
+  - Paylocity paycheck PDFs → single CSV (one row per paycheck) with robust field extraction
+
+Design principles:
+- Fast, private, and offline by default (no external services)
+- Vanilla JavaScript, clear CLIs, and predictable file outputs
+- Small, testable modules with focused responsibility
 
 ### Quick Start
 
@@ -25,6 +42,7 @@ Pass arguments after `--`.
 - Moore/Marsden calculation (example values): `npm run moore-marsden`
 - Apportionment & buyout calculator (example values): `npm run apportionment`
 - iMessage parser with sentiment: `npm run imessage -- /absolute/path/to/imessage.txt`
+- Paylocity paychecks → CSV: `npm run paylocity -- /absolute/path/to/folder/of/pdfs`
 
 ---
 
@@ -146,6 +164,20 @@ Pass arguments after `--`.
   npm run apportionment -- --config ./source_files/apportionment.config.json --out-json ./output/apportionment.json
   ```
  - **Notes**: Neutral, even-number example defaults to illustrate formulas. Future enhancement: toggles for Epstein-only vs. equity allocation and FRV offsets.
+
+### 8) Paylocity Paychecks → CSV (`paylocity.js`)
+
+- **Purpose**: Scan a folder of Paylocity paycheck PDFs and produce a single CSV with one row per paycheck.
+- **Input**: Path to a folder containing `.pdf` paystubs exported from Paylocity.
+- **Output**: `same-folder/paychecks.csv` by default; override with `--out <file.csv>`.
+- **Run**:
+  ```bash
+  npm run paylocity -- /absolute/path/to/paystubs
+  npm run paylocity -- /absolute/path/to/paystubs -- --out /absolute/path/to/output/paychecks.csv
+  npm run paylocity -- /absolute/path/to/paystubs -- --glob 2025   # only files with '2025' in name
+  ```
+- **Columns**: `File, Pay Date, Period Start, Period End, Gross Pay, Net Pay, Total Taxes, Total Deductions, Federal Income Tax, State Income Tax, Social Security, Medicare`.
+- **Notes**: Parser is resilient to minor label shifts (e.g., "Pay Date" vs. "Check Date"; "Pay Period" range or separate Begin/End). Missing values are left blank.
 
 ---
 
