@@ -79,7 +79,7 @@ function apportionEquity({ acquisitionContext, PP, FMV, L0, L1, L2, Sy, Sh, cpIm
         throw new Error('Invalid purchase price (PP). Must be > 0.');
     }
     const CpFromLoans = (L0 ?? 0) - (L1 ?? 0);
-    if (typeof principalPaidDuringMarriageProvided === 'number') {
+    if (principalPaidDuringMarriageProvided != null) {
         const diff = Math.abs(CpFromLoans - principalPaidDuringMarriageProvided);
         if (diff > 0.01) {
             console.warn(`Warning: Cp mismatch. L0-L1 = ${CpFromLoans.toFixed(2)} vs provided principalPaidDuringMarriage = ${principalPaidDuringMarriageProvided.toFixed(2)}.`);
