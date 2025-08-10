@@ -149,6 +149,23 @@ Pass arguments after `--`.
 
 ---
 
+## Shared Utilities
+
+### `utils/date.js`
+Reusable date/time helpers used across tools:
+- Constants: `weekdayNames`, `nameToOrdinal`
+- Month/day: `daysInMonth`, `getNthOccurrenceDate`, `getFifthOccurrenceDate`
+- Visitation helpers: `getFirstAnchorOfMonth`, `getFirstWeekStart`
+- Formatters: `formatDateMMMddYYYY`, `formatDateMMDDYYYY`, `formatTimeHHMM`
+- OFW-specific: `getWeekString` (Sun–Sat), `parseDate` (MM/DD/YYYY hh:mm AM/PM), `formatDate`
+
+Import example:
+```js
+const { getFifthOccurrenceDate, formatDateMMMddYYYY } = require('./utils/date');
+```
+
+---
+
 ## Data Flow and Typical Usage
 
 1) Export OFW Messages as PDF → run `ofw:analyze` → get `<basename>.json` and `<basename>.csv`.

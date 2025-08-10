@@ -1,3 +1,33 @@
+## Changelog
+
+
+All notable changes to this project will be documented in this file.	
+
+The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
+
+## [1.2.1] - 2025-08-10
+
+### Changed
+- Centralized shared date helpers into `utils/date.js`:
+  - `weekdayNames`, `nameToOrdinal`, `daysInMonth`, `getNthOccurrenceDate`, `getFifthOccurrenceDate`
+  - Visitation helpers: `getFirstAnchorOfMonth`, `getFirstWeekStart`
+  - Formatters: `formatDateMMMddYYYY`, `formatDateMMDDYYYY`, `formatTimeHHMM`
+  - OFW-specific helpers: `getWeekString` (Sun–Sat), `parseDate` (MM/DD/YYYY hh:mm AM/PM), `formatDate`
+- Refactored consumers to use shared helpers:
+  - `message-volume.js` now imports date formatters from `utils/date.js`
+  - `nth-week.js` imports `daysInMonth`, `getFifthOccurrenceDate`, `weekdayNames`, `nameToOrdinal`
+  - `visitation-cal.js` imports `weekdayNames`, `nameToOrdinal`, `getFirstAnchorOfMonth`, `getFirstWeekStart`
+  - `utils.js` delegates `getWeekString`, `parseDate`, `formatDate` to `utils/date.js`
+- Removed `moment` usage from code and dependency list in `package.json`
+
+### Tests
+- All affected unit tests run green: `nth-week`, `visitation-cal`, `imessage`, `moore-marsden`, and OFW parser boundary test.
+
+## Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 ## 1.2.0 - 2025-08-09
 
 ### Added
@@ -17,11 +47,7 @@
 - Streamlined and de-duplicated prompts to reduce verbosity and token cost
 - Updated `README.md` with AI Tooling section and prompts license link
 - Updated `CONTRIBUTING.md` and `copilot-instructions.md` to reflect repo rules and navigation
-## Changelog
 
-All notable changes to this project will be documented in this file.
-
-The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
 ## [1.1.1] - 2025-08-09
 

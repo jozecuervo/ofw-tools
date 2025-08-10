@@ -33,28 +33,27 @@
  */
 // Pure computation helpers
 
-/**
- * Return the number of days in a given month/year.
- * @param {number} year
- * @param {number} monthIndex - Zero-based month index (0=Jan ... 11=Dec)
- * @returns {number}
- */
-function daysInMonth(year, monthIndex) {
-    return new Date(year, monthIndex + 1, 0).getDate();
-}
+const { daysInMonth, getFifthOccurrenceDate, weekdayNames, nameToOrdinal } = require('./utils/date');
 
 /**
- * Get the Date of the 5th occurrence of a weekday in a given month, if any.
- * @param {number} year
- * @param {number} monthIndex - Zero-based month index (0=Jan ... 11=Dec)
- * @param {number} weekdayOrdinal - Anchor weekday (0=Sun ... 6=Sat)
- * @returns {Date|null}
+ * List ISO dates for each 5th occurrence in the range.
+ * @param {number} startYear
+ * @param {number} endYear
+ * @param {number} weekdayOrdinal
+ * @returns {{ datesByYear: Record<number,string[]>, total: number }}
  */
-function getFifthOccurrenceDate(year, monthIndex, weekdayOrdinal) {
-    const firstDay = new Date(year, monthIndex, 1).getDay();
-    const firstOccurDate = 1 + ((weekdayOrdinal - firstDay + 7) % 7);
-    const fifthDate = firstOccurDate + 28; // 4 additional weeks
-    return fifthDate <= daysInMonth(year, monthIndex) ? new Date(year, monthIndex, fifthDate) : null;
+function listFifthOccurrenceDates(startYear, endYear, weekdayOrdinal) {
+    const datesByYear = {};
+    let total = 0;
+    for (let y = startYear; y <= endYear; y++) {
+        const arr = [];
+        for (let m = 0; m < 12; m++) {
+            const d = getFifthOccurrenceDate(y, m, weekdayOrdinal);
+            if (d) { arr.push(d.toISOString().substring(0,10)); total++; }
+        }
+        datesByYear[y] = arr;
+    }
+    return { datesByYear, total };
 }
 
 /**
@@ -76,27 +75,6 @@ function computeMonthsWithFifth(startYear, endYear, weekdayOrdinal) {
         perYear[y] = c;
     }
     return { monthsSet, perYear, total: Array.from(monthsSet).length };
-}
-
-/**
- * List ISO dates for each 5th occurrence in the range.
- * @param {number} startYear
- * @param {number} endYear
- * @param {number} weekdayOrdinal
- * @returns {{ datesByYear: Record<number,string[]>, total: number }}
- */
-function listFifthOccurrenceDates(startYear, endYear, weekdayOrdinal) {
-    const datesByYear = {};
-    let total = 0;
-    for (let y = startYear; y <= endYear; y++) {
-        const arr = [];
-        for (let m = 0; m < 12; m++) {
-            const d = getFifthOccurrenceDate(y, m, weekdayOrdinal);
-            if (d) { arr.push(d.toISOString().substring(0,10)); total++; }
-        }
-        datesByYear[y] = arr;
-    }
-    return { datesByYear, total };
 }
 
 /**
@@ -171,17 +149,6 @@ for (let i = 0; i < args.length; i++) {
     else if (a === '--list') verboseDates = true;
     else if (a === '--per-year') perYear = true;
 }
-
-const weekdayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const nameToOrdinal = {
-    sunday: 0, sun: 0,
-    monday: 1, mon: 1,
-    tuesday: 2, tue: 2, tues: 2,
-    wednesday: 3, wed: 3,
-    thursday: 4, thu: 4, thurs: 4,
-    friday: 5, fri: 5,
-    saturday: 6, sat: 6,
-};
 
 function runCli() {
     // Backward-compat: allow --anchor as name(s)

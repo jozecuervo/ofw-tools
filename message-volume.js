@@ -1,4 +1,9 @@
 const fs = require('fs');
+const {
+  formatDateMMMddYYYY,
+  formatDateMMDDYYYY,
+  formatTimeHHMM,
+} = require('./utils/date');
 
 function printHelp() {
   console.log(`\nUsage: node message-volume.js <path-to-json-file> [--sender "Name"] [--threshold-min 30] [--min-messages 3]\n\nOptions:\n  --sender          Sender name to analyze (exact match). Default: "José Hernandez"\n  --threshold-min   Max minutes between consecutive messages to be in the same cluster. Default: 30\n  --min-messages    Minimum messages per cluster to include in output. Default: 3\n  -h, --help        Show this help\n`);
@@ -30,32 +35,9 @@ const messages = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 // Helper to parse date strings
 const parseSentDate = dateString => new Date(dateString).getTime();
 
-const formatDate = dateString => {
-  const date = new Date(dateString);
-  return date.toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
-const formatDate2 = dateString => {
-  const date = new Date(dateString);
-  return date.toLocaleString('en-US', {
-    month: '2-digit',
-    day: '2-digit',
-    year: 'numeric'
-  });
-};
-
-
-const formatTime = dateString => {
-  const date = new Date(dateString);
-  return date.toLocaleString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
+const formatDate = formatDateMMMddYYYY;
+const formatDate2 = formatDateMMDDYYYY;
+const formatTime = formatTimeHHMM;
 
 function analyzeRapidFireMessages(messages, senderName, thresholdSeconds = 60 * 30) { // Default threshold: 30 minutes
   const senderMessages = messages

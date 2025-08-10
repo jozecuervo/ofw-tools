@@ -21,16 +21,12 @@ const VISITATION_CONFIG = {
     WEEKEND_VISIT_WEEKS: [1, 3] // Weeks with weekend visits (default: 2nd, 4th)
 };
 
-const weekdayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const nameToOrdinal = {
-    sunday: 0, sun: 0,
-    monday: 1, mon: 1,
-    tuesday: 2, tue: 2, tues: 2,
-    wednesday: 3, wed: 3,
-    thursday: 4, thu: 4, thurs: 4,
-    friday: 5, fri: 5,
-    saturday: 6, sat: 6,
-};
+const {
+    weekdayNames,
+    nameToOrdinal,
+    getFirstAnchorOfMonth,
+    getFirstWeekStart,
+} = require('./utils/date');
 
 /**
  * Get the first occurrence of the anchor weekday in a month.
@@ -39,13 +35,8 @@ const nameToOrdinal = {
  * @param {number} anchorOrdinal - 0=Sun ... 6=Sat
  * @returns {Date}
  */
-function getFirstAnchorOfMonth(year, month, anchorOrdinal) {
-    let date = new Date(year, month - 1, 1);
-    while (date.getDay() !== anchorOrdinal) {
-        date.setDate(date.getDate() + 1);
-    }
-    return date;
-}
+function getFirstAnchorOfMonthLocal(year, month, anchorOrdinal) {
+    return getFirstAnchorOfMonth(year, month, anchorOrdinal);
 
 /**
  * Calculate the start (Sunday) of Week 1 (first week containing the anchor weekday).
@@ -54,12 +45,9 @@ function getFirstAnchorOfMonth(year, month, anchorOrdinal) {
  * @param {number} anchorOrdinal - 0=Sun ... 6=Sat
  * @returns {Date}
  */
-function getFirstWeekStart(year, month, anchorOrdinal) {
-    const firstAnchor = getFirstAnchorOfMonth(year, month, anchorOrdinal);
-    const firstWeekStart = new Date(firstAnchor);
-    firstWeekStart.setDate(firstAnchor.getDate() - firstAnchor.getDay());
-    return firstWeekStart;
-}
+function getFirstWeekStartLocal(year, month, anchorOrdinal) {
+    return getFirstWeekStart(year, month, anchorOrdinal);
+// Removed unnecessary wrapper function getFirstWeekStartLocal
 
 /**
  * Calculate the 5 court weeks for a given month.
@@ -70,7 +58,7 @@ function getFirstWeekStart(year, month, anchorOrdinal) {
  */
 function getWeeksInfo(year, month, anchorOrdinal = 5) {
     // Get the start date of the first week
-    let firstWeekStart = getFirstWeekStart(year, month, anchorOrdinal);
+    let firstWeekStart = getFirstWeekStartLocal(year, month, anchorOrdinal);
     // Initialize an array to hold the weeks info
     let weeksInfo = [];
     // Loop for each week of the month
@@ -238,7 +226,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-    getFirstAnchorOfMonth,
-    getFirstWeekStart,
+    getFirstAnchorOfMonth: getFirstAnchorOfMonthLocal,
+    getFirstWeekStart: getFirstWeekStartLocal,
     getWeeksInfo,
 };

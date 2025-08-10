@@ -1,6 +1,6 @@
 {
   "name": "ofw-tools",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "This repository contains a set of small, focused tools that help analyze communications, plan visitation schedules, and perform basic family-law-related calculations (Moore/Marsden, apportionment). These are optimized for quick, local use as you prepare materials for court.",
   "main": "index.js",
   "scripts": {
@@ -17,7 +17,6 @@
   "author": "",
   "license": "CC0-1.0",
   "dependencies": {
-    "moment": "^2.29.4",
     "natural": "^6.8.0",
     "pdf-parse": "^1.1.1",
     "polarity": "^4.0.1",
