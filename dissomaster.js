@@ -87,7 +87,7 @@ const defaults = {
     marriageInfo: {
         marriageDate: '2015-06-15',
         separationDate: '2024-12-01',
-        marriageLengthYears: 9.5
+        marriageLengthYears: 9.5 // TODO: This value can be calculated from the marriageDate and separationDate
     },
     options: {
         childSupport: 0,
