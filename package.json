@@ -4,6 +4,7 @@
   "description": "This repository contains a set of small, focused tools that help analyze communications, plan visitation schedules, and perform basic family-law-related calculations (Moore/Marsden, apportionment). These are optimized for quick, local use as you prepare materials for court.",
   "main": "index.js",
   "scripts": {
+    "brew:install": "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"",
     "test": "jest",
     "prompts:validate": "node scripts/validate-prompts.js",
     "ofw:analyze": "node index.js",
@@ -12,7 +13,9 @@
     "nth-week": "node nth-week.js",
     "moore-marsden": "node moore-marsden.js",
     "apportionment": "node apportionment-calc.js",
-    "imessage": "node imessage.js"
+    "imessage": "node imessage.js",
+    "imessage:install": "brew install imessage-exporter",
+    "imessage:export": "imessage-exporter --export-type plain-text --output-dir ./output"
   },
   "author": "",
   "license": "CC0-1.0",

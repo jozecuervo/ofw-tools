@@ -11,6 +11,17 @@
  * - Following lines (until the next timestamp line) are the message content.
  * - Empty lines are ignored.
  *
+ * Prerequisite: Export iMessage database to text files
+ * - Use the imessage-exporter tool and follow its README:
+ *   https://github.com/ReagentX/imessage-exporter/blob/develop/imessage-exporter/README.md
+ * - Typical steps:
+ *   1) Install and run the exporter (grant Full Disk Access so it can read the Messages DB).
+ *   2) Choose a Plain Text export (per-chat or all chats) and select an output directory.
+ *   3) Ensure the text format groups entries as described above (timestamp line → sender → content lines).
+ *   4) Locate the exported .txt file(s) to use as input for this script.
+ * - Then run this tool against an exported text file:
+ *   npm run imessage -- /absolute/path/to/exported-imessage.txt -- --out-dir ./output
+ *
  * Outputs
  * - Per-year JSON files written to an output directory (default: `./output`).
  * - Console summary of counts per year and totals.
