@@ -13,7 +13,21 @@
 
 /**
  * Parse a US currency string into a Number.
- * Accepts optional leading $ and thousands separators.
+ * Parses a US currency string into a Number.
+ *
+ * Accepts optional leading '$', thousands separators (commas), spaces, and negative values
+ * (either with a leading '-' or wrapped in parentheses).
+ *
+ * @param {string|number|null|undefined} value - The currency value to parse. Can be a string, number, null, or undefined.
+ * @returns {number|null} The parsed numeric value, or null if the input is missing or invalid.
+ *
+ * @example
+ * parseMoneyStringToNumber("$1,234.56"); // 1234.56
+ * parseMoneyStringToNumber("($1,234.56)"); // -1234.56
+ * parseMoneyStringToNumber("-$1,234.56"); // -1234.56
+ * parseMoneyStringToNumber("1234.56"); // 1234.56
+ * parseMoneyStringToNumber(null); // null
+ * parseMoneyStringToNumber("invalid"); // null
  */
 function parseMoneyStringToNumber(value) {
   if (value == null) return null;
