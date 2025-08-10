@@ -61,7 +61,14 @@ module.exports = {
     // parseMessage is intentionally not exported to keep surface small
     __processMessages: processMessages,
     __parseMessage: undefined,
+    // High-level API
     parsePdfFile,
+    writeJsonFile,
+    writeMarkDownFile,
+    compileAndOutputStats,
+    outputMarkdownSummary,
+    outputCSV,
+    // CLI entry
     runCli,
 };
 
