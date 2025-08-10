@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.6.0] - 2025-08-10
+
+### Added
+- **DissoMaster Calculator**: Comprehensive California spousal support calculator with CLI interface (`dissomaster.js`)
+  - Core spousal support calculation using DissoMaster methodology (40% of income gap minus 50% of child support)
+  - Tax calculations: Federal and California state tax calculations using 2024 tax brackets and rates
+  - Duration guidelines: Support duration recommendations based on California marriage length guidelines
+  - Payment schedules: Generated payment schedules with step-down provisions for medium-term marriages
+  - CLI options: `--config`, `--out-json`, `--summary`, `--no-explain`, `--duration`, `--schedule`
+- **DissoMaster utilities**: Modular calculation engine in `utils/dissomaster/`
+  - `calculator.js`: Core spousal support and net income calculations
+  - `tax-calculator.js`: Federal/CA tax calculations with 2024 brackets
+  - `duration-calculator.js`: Marriage length-based duration guidelines
+  - `validation.js`: Comprehensive input validation
+- **npm script**: `npm run dissomaster` for easy CLI access
+- **Unit tests**: 12 comprehensive test cases in `__tests__/dissomaster.test.js` (all passing)
+
+### Fixed
+- **OFW output utilities**: Resolved missing `utils/output/markdown.js` and `utils/output/csv.js` files
+  - `formatMessageMarkdown`: Formats individual messages for markdown output
+  - `formatTotalsMarkdown`: Creates markdown tables for total statistics
+  - `formatWeeklyMarkdown`: Creates markdown tables for weekly statistics
+  - `formatWeeklyCsv`: Generates CSV output for weekly statistics
+- **Test coverage**: Fixed failing tests in `__tests__/ofw-output.test.js` and `__tests__/ofw-index.test.js`
+
+### Legal Compliance
+- **Disclaimers**: Comprehensive legal disclaimers emphasizing educational use only
+- **Professional guidance**: Clear warnings about need for certified DissoMaster software and legal counsel
+- **Tax accuracy**: Simplified tax calculations with recommendations for professional tax advice
+
 ## [1.5.0] - 2025-08-10
 
 PR: [#11](https://github.com/jozecuervo/ofw-tools/pull/11)
