@@ -198,7 +198,6 @@ function parsePaylocityPaystub(rawText) {
                                       /(?:Period\s*(?:Start|Begin|Beginning)\s*(?:Date)?)\s*:?\s*([A-Za-z]+\s+\d{1,2},\s*\d{4})/i]);
     const endRaw = firstMatch(text, [/(?:Period\s*(?:End|Ending)\s*(?:Date)?)\s*:?\s*([0-1]?\d[\/-][0-3]?\d[\/-]\d{4})/i,
                                     /(?:Period\s*(?:End|Ending)\s*(?:Date)?)\s*:?\s*([A-Za-z]+\s+\d{1,2},\s*\d{4})/i]);
-    periodStart = normalizeDateString(beginRaw) || normalizeDateString(findDateAfterLabel(text, 'Period Beginning')) || normalizeDateString(findDateAfterLabel(text, 'Period Start'));
     const periodBeginningRaw = findDateAfterLabel(text, 'Period Beginning');
     const periodStartRaw = findDateAfterLabel(text, 'Period Start');
     periodStart = normalizeDateString(beginRaw) ||
