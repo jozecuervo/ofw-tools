@@ -17,7 +17,14 @@ const { writeFile, ensureDir } = require("./utils");
 const { parsePaylocityPaystub, normalizeText } = require("./utils/paylocity/parser");
 
 function printHelp() {
-  console.log(`\nUsage: node paylocity.js <source-folder> [--out <file.csv>] [--glob <pattern>]\n\nOptions:\n  --out <file.csv>   Destination CSV path. Default: <source-folder>/paychecks.csv\n  --glob <pattern>   Only include PDFs whose filename contains this substring (case-insensitive)\n  -h, --help         Show this help\n`);
+  console.log(`
+Usage: node paylocity.js <source-folder> [--out <file.csv>] [--glob <pattern>]
+
+Options:
+  --out <file.csv>   Destination CSV path. Default: <source-folder>/paychecks.csv
+  --glob <pattern>   Only include PDFs whose filename contains this substring (case-insensitive)
+  -h, --help         Show this help
+`);
 }
 
 function listPdfFilesInDir(dirPath) {
