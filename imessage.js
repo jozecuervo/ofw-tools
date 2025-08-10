@@ -154,24 +154,21 @@ function parseIMessageFile(filePath) {
  */
 function writeMessagesToFile(groupedMessages, outDir) {
     try {
-        fs.mkdirSync(outDir, { recursive: true });
+        const { ensureDir, writeJson } = require('./utils/fs');
+        ensureDir(outDir);
     } catch (e) {
         console.error(`Failed to create output directory ${outDir}:`, e);
         process.exit(1);
     }
     Object.entries(groupedMessages).forEach(([year, messages]) => {
         const outPath = path.join(outDir, `imessage-export-${year}.json`);
-        fs.writeFile(
-            outPath,
-            JSON.stringify(messages, null, 2),
-            (err) => {
-                if (err) {
-                    console.error(`Error writing file for year ${year}:`, err);
-                    return;
-                }
-                console.log(`Messages for year ${year} written to ${outPath}`);
-            }
-        );
+        try {
+            const { writeJson } = require('./utils/fs');
+            writeJson(outPath, messages);
+            console.log(`Messages for year ${year} written to ${outPath}`);
+        } catch (err) {
+            console.error(`Error writing file for year ${year}:`, err);
+        }
     });
 }
 

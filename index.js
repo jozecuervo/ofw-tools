@@ -21,7 +21,7 @@
 const path = require('path');
 
 const { parsePdf } = require('./utils');
-const { writeFile } = require('./utils');
+const { writeFile, writeJson } = require('./utils');
 const { formatDate } = require('./utils');
 const { processMessages } = require('./utils/ofw/parser');
 const { accumulateStats } = require('./utils/ofw/stats');
@@ -93,10 +93,9 @@ function writeJsonFile(data) {
     return new Promise((resolve, reject) => {
         try {
             const { messages, directory, fileNameWithoutExt } = data;
-            const jsonData = JSON.stringify(messages, null, 2);
             const jsonFilePath = path.join(directory, `${fileNameWithoutExt}.json`);
             console.log(`Writing JSON to ${jsonFilePath}`);
-            writeFile(jsonFilePath, jsonData);
+            writeJson(jsonFilePath, messages);
             resolve(data);  // Pass the data object along for further processing
         } catch (error) {
             reject(`Failed to write JSON file: ${error}`);
