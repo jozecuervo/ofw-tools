@@ -1,0 +1,67 @@
+{
+  "scenario": "Edge Case - Negative Appreciation During Marriage",
+  "description": "Property that was worth more at marriage than at separation/division. Tests how Moore/Marsden handles declining property values during marriage.",
+  "legalBasis": {
+    "regime": "Moore/Marsden",
+    "caseCitations": [
+      "In re Marriage of Moore (1980) 28 Cal.3d 366",
+      "In re Marriage of Marsden (1982) 130 Cal.App.3d 426"
+    ],
+    "applicableStatutes": [
+      "Cal. Fam. Code § 770 (separate property)",
+      "Cal. Fam. Code § 2640 (principal contributions)"
+    ]
+  },
+  "factualAssumptions": {
+    "acquisitionContext": "premaritalOwner",
+    "marketConditions": "Property market declined during marriage period",
+    "titleHistory": "Separately owned before marriage, no transmutation",
+    "financingHistory": "Original purchase loan, no refinancing",
+    "maintenance": "Property maintained but market forces caused depreciation"
+  },
+  "calculations": {
+    "houseValueAtPurchase": 750000,
+    "downPayment": 150000,
+    "fairMarketAtMarriage": 900000,
+    "appraisedValue": 850000,
+    "mortgageAtPurchase": 600000,
+    "mortgageAtSeparation": 550000,
+    "principalPaidDuringMarriage": 50000,
+    "yourSeparateInterest": 150000,
+    "herSeparateInterest": 0,
+    "acquisitionContext": "premaritalOwner"
+  },
+  "expectedResults": {
+    "regime": "Moore/Marsden",
+    "appreciationBeforeMarriage": 150000,
+    "appreciationDuringMarriage": -50000,
+    "communityShareOfDepreciation": -3333.33,
+    "communityPropertyInterest": 46666.67,
+    "separatePropertyInterest": 346666.67,
+    "note": "Community shares proportionally in both appreciation and depreciation"
+  },
+  "educationalNotes": {
+    "keyPrinciple": "Moore/Marsden formula applies equally to appreciation and depreciation",
+    "mathematicalTreatment": "Negative appreciation is allocated proportionally just like positive appreciation",
+    "practicalImplication": "Community interest can be reduced by market declines during marriage",
+    "formulaApplication": "CP share = (CP principal ÷ PP) × (negative appreciation)"
+  },
+  "testingObjectives": [
+    "Verify tool handles negative appreciation correctly",
+    "Ensure proportional allocation works with negative values",
+    "Test warning systems for unusual market conditions",
+    "Validate mathematical consistency in edge cases"
+  ],
+  "validationChecks": {
+    "totalEquityBalance": "Sum of all interests should equal total equity",
+    "negativeAppreciationHandling": "Negative values should be allocated proportionally",
+    "warningGeneration": "Tool should warn about negative appreciation during marriage",
+    "mathematicalConsistency": "Percentages should remain consistent regardless of appreciation direction"
+  },
+  "limitations": [
+    "Does not account for partial market recovery",
+    "Assumes depreciation is market-driven, not property-specific",
+    "Does not consider improvements that might offset depreciation",
+    "May not reflect complex market timing issues"
+  ]
+}

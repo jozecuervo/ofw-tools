@@ -1,4 +1,4 @@
-const { computeMooreMarsdenThreeBucket, calculateBuyout, apportionEquity } = require('../apportionment-calc');
+const { computeMooreMarsdenThreeBucket, calculateBuyout, apportionEquity, computeApportionment } = require('../apportionment-calc');
 
 function closeTo(a, b, eps = 1e-6) {
   return Math.abs(a - b) <= eps;
@@ -77,6 +77,162 @@ describe('Apportionment (Moore/Marsden three-bucket) and credits', () => {
     expect(Math.abs(res.cp.equity - expectedCp) <= 1e-6).toBe(true);
     expect(Math.abs(res.you.equity - Sy) <= 1e-6).toBe(true);
     expect(Math.abs(res.her.equity - Sh) <= 1e-6).toBe(true);
+  });
+});
+
+// Enhanced boundary condition tests
+describe('Boundary conditions and edge cases', () => {
+  test('Zero appreciation during marriage', () => {
+    const inputs = {
+      houseValueAtPurchase: 500000,
+      fairMarketAtMarriage: 500000,
+      appraisedValue: 500000,
+      downPayment: 100000,
+      principalPaidDuringMarriage: 50000,
+      yourSeparateInterest: 100000,
+      herSeparateInterest: 0,
+      mortgageAtPurchase: 400000,
+      mortgageAtSeparation: 350000,
+      acquisitionContext: 'premaritalOwner'
+    };
+
+    const result = computeApportionment(inputs);
+    expect(result.metadata.appreciationDuringMarriage).toBe(0);
+    expect(result.mm.cp.shareOfAppreciation).toBe(0);
+    expect(result.mm.you.shareOfAppreciation).toBe(0);
+  });
+
+  test('Negative appreciation during marriage', () => {
+    const inputs = {
+      houseValueAtPurchase: 600000,
+      fairMarketAtMarriage: 700000,
+      appraisedValue: 650000,
+      downPayment: 120000,
+      principalPaidDuringMarriage: 60000,
+      yourSeparateInterest: 120000,
+      herSeparateInterest: 0,
+      mortgageAtPurchase: 480000,
+      mortgageAtSeparation: 420000,
+      acquisitionContext: 'premaritalOwner'
+    };
+
+    const result = computeApportionment(inputs);
+    expect(result.metadata.appreciationDuringMarriage).toBe(-50000);
+    expect(result.metadata.hasNegativeAppreciation).toBe(false); // This checks total appreciation vs purchase price
+    
+    // Moore/Marsden uses total appreciation (FMV - PP), not appreciation during marriage
+    const totalAppreciation = 650000 - 600000; // 50000 total appreciation
+    const expectedCommunityShare = (60000 / 600000) * totalAppreciation; 
+    expect(closeTo(result.mm.cp.shareOfAppreciation, expectedCommunityShare, 0.01)).toBe(true);
+    
+    // Verify the warning was generated for negative appreciation during marriage
+    // (This would be captured in console.warn calls during validation)
+  });
+
+  test('Input validation - invalid purchase price', () => {
+    expect(() => {
+      computeApportionment({
+        houseValueAtPurchase: 0,
+        appraisedValue: 100000
+      });
+    }).toThrow('Purchase price must be a positive number greater than 0');
+
+    expect(() => {
+      computeApportionment({
+        houseValueAtPurchase: -100000,
+        appraisedValue: 100000
+      });
+    }).toThrow('Purchase price must be a positive number greater than 0');
+  });
+
+  test('Input validation - invalid acquisition context', () => {
+    expect(() => {
+      computeApportionment({
+        houseValueAtPurchase: 500000,
+        appraisedValue: 600000,
+        acquisitionContext: 'invalidContext'
+      });
+    }).toThrow('Invalid acquisitionContext');
+  });
+
+  test('Dry run mode - validation only', () => {
+    const result = computeApportionment({
+      houseValueAtPurchase: 500000,
+      appraisedValue: 600000,
+      principalPaidDuringMarriage: 50000,
+      yourSeparateInterest: 100000,
+      herSeparateInterest: 0,
+      dryRun: true
+    });
+
+    expect(result.validation).toBeDefined();
+    expect(result.validation.valid).toBe(true);
+    expect(result.metadata.message).toContain('Dry run completed');
+    expect(result.baseline).toBeUndefined(); // No calculations performed
+  });
+
+  test('Skip validation mode', () => {
+    // This should not throw even with invalid data when validation is skipped
+    const result = computeApportionment({
+      houseValueAtPurchase: 500000,
+      appraisedValue: 600000,
+      validateInputs: false,
+      acquisitionContext: 'premaritalOwner'
+    });
+
+    expect(result.regime).toBe('Moore/Marsden');
+  });
+
+  test('Large values calculation accuracy', () => {
+    const inputs = {
+      houseValueAtPurchase: 50000000,
+      fairMarketAtMarriage: 65000000,
+      appraisedValue: 80000000,
+      downPayment: 10000000,
+      principalPaidDuringMarriage: 5000000,
+      yourSeparateInterest: 10000000,
+      herSeparateInterest: 0,
+      mortgageAtPurchase: 40000000,
+      mortgageAtSeparation: 35000000,
+      acquisitionContext: 'premaritalOwner'
+    };
+
+    const result = computeApportionment(inputs);
+    expect(result.regime).toBe('Moore/Marsden');
+    expect(result.baseline.community).toBeGreaterThan(0);
+    expect(result.baseline.yourSP).toBeGreaterThan(0);
+  });
+
+  test('Minimum positive values', () => {
+    const inputs = {
+      houseValueAtPurchase: 1,
+      fairMarketAtMarriage: 1,
+      appraisedValue: 2,
+      downPayment: 0.5,
+      principalPaidDuringMarriage: 0.25,
+      yourSeparateInterest: 0.5,
+      herSeparateInterest: 0,
+      mortgageAtPurchase: 0.5,
+      mortgageAtSeparation: 0.25,
+      acquisitionContext: 'premaritalOwner'
+    };
+
+    const result = computeApportionment(inputs);
+    expect(result.regime).toBe('Moore/Marsden');
+    // Should complete calculation without errors
+    expect(result.baseline).toBeDefined();
+  });
+
+  test('Metadata includes regime explanation', () => {
+    const result = computeApportionment({
+      houseValueAtPurchase: 500000,
+      appraisedValue: 600000,
+      acquisitionContext: 'premaritalOwner'
+    });
+
+    expect(result.metadata.regimeUsed).toBe('Moore/Marsden');
+    expect(result.metadata.explanation).toContain('Moore/Marsden apportionment');
+    expect(result.metadata.totalAppreciation).toBe(100000);
   });
 });
 

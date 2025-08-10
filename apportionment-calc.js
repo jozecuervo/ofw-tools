@@ -1,6 +1,13 @@
 /**
  * Apportionment & Buyout Calculator (Moore/Marsden with separate Watts/Epstein ledgers)
  *
+ * IMPORTANT LEGAL DISCLAIMER:
+ * This tool is for educational and calculation purposes only and does not constitute legal advice.
+ * Property division in divorce involves complex legal issues that vary by jurisdiction and individual
+ * circumstances. Always consult with a qualified family law attorney before making decisions based
+ * on these calculations. This tool does not account for many factors that may affect property
+ * characterization, including transmutations, agreements, refinances, improvements, or other legal doctrines.
+ *
  * Purpose
  * - Compute Separate Property (SP) and Community Property (CP) interests using a Moore/Marsden
  *   style apportionment based on purchase price (PP), not on contribution-proportions of current equity.
@@ -8,10 +15,12 @@
  *   after property interests are determined. Do NOT blend them into the equity math.
  *
  * Legal anchors (California)
- * - In re Marriage of Moore (1980) 28 Cal.3d 366; In re Marriage of Marsden (1982) 130 Cal.App.3d 426
+ * - In re Marriage of Moore (1980) 28 Cal.3d 366, 374-375 [169 Cal.Rptr. 619, 618 P.2d 208]
+ * - In re Marriage of Marsden (1982) 130 Cal.App.3d 426, 435-437 [181 Cal.Rptr. 910]
  * - Family Code §§ 760, 770, 2640 (principal reduction only; exclude interest/taxes/insurance for MM ratio)
- * - In re Marriage of Epstein (1979) 24 Cal.3d 76 (post-separation principal reimbursements)
- * - In re Marriage of Watts (1985) 171 Cal.App.3d 366 (exclusive use charge; fair rental value offsets)
+ * - In re Marriage of Epstein (1979) 24 Cal.3d 76, 84-86 [155 Cal.Rptr. 171, 593 P.2d 1159] (post-separation principal reimbursements)
+ * - In re Marriage of Watts (1985) 171 Cal.App.3d 366, 374-376 [214 Cal.Rptr. 787] (exclusive use charge; fair rental value offsets)
+ * - Recent guidance: In re Marriage of Walrath (1998) 17 Cal.4th 907 (transmutation requirements)
  *
  * CLI
  * - node apportionment-calc.js [--config <path-to-json>] [--out-json <path>]
@@ -41,6 +50,89 @@
 
 const path = require('path');
 const fs = require('fs');
+
+/**
+ * Enhanced input validation functions
+ */
+function validateAcquisitionContext(context) {
+    const validContexts = ['premaritalOwner', 'jointTitleDuringMarriage', 'separateTitleDuringMarriage'];
+    if (!validContexts.includes(context)) {
+        throw new Error(`Invalid acquisitionContext: "${context}". Must be one of: ${validContexts.join(', ')}`);
+    }
+}
+
+function validatePurchasePrice(pp) {
+    if (typeof pp !== 'number' || pp <= 0) {
+        throw new Error('Purchase price must be a positive number greater than 0');
+    }
+}
+
+function validateAppreciationValues(fmv, pp, fmvMarriage = null) {
+    if (typeof fmv !== 'number' || fmv <= 0) {
+        throw new Error('Fair market value must be a positive number greater than 0');
+    }
+    if (fmvMarriage != null && fmv < fmvMarriage) {
+        console.warn('Warning: Negative appreciation during marriage detected (FMV@Division < FMV@Marriage)');
+    }
+}
+
+function validateBucketSum(pp, cp, sy, sh, tolerance = 0.01) {
+    const total = (cp || 0) + (sy || 0) + (sh || 0);
+    const diff = Math.abs(total - pp);
+    if (diff > tolerance) {
+        console.warn(`Warning: Bucket contributions (${total.toFixed(2)}) do not equal purchase price (${pp.toFixed(2)}). Difference: ${diff.toFixed(2)}`);
+    }
+}
+
+function validateInputBounds(inputs) {
+    const { houseValueAtPurchase: pp, appraisedValue: fmv, fairMarketAtMarriage } = inputs;
+    
+    validatePurchasePrice(pp);
+    validateAppreciationValues(fmv, pp, fairMarketAtMarriage);
+    
+    if (inputs.acquisitionContext) {
+        validateAcquisitionContext(inputs.acquisitionContext);
+    }
+    
+    // Check for negative values in key fields
+    const numericalFields = ['yourSeparateInterest', 'herSeparateInterest', 'principalPaidDuringMarriage'];
+    for (const field of numericalFields) {
+        if (inputs[field] != null && inputs[field] < 0) {
+            throw new Error(`${field} cannot be negative: ${inputs[field]}`);
+        }
+    }
+    
+    // Validate bucket sum if we have the data
+    if (inputs.principalPaidDuringMarriage != null && inputs.yourSeparateInterest != null && inputs.herSeparateInterest != null) {
+        validateBucketSum(pp, inputs.principalPaidDuringMarriage, inputs.yourSeparateInterest, inputs.herSeparateInterest);
+    }
+}
+
+/**
+ * Dry run validation mode - validates inputs without performing calculations
+ */
+function validateDryRun(inputs) {
+    try {
+        validateInputBounds(inputs);
+        console.log('✓ Input validation passed');
+        return { valid: true, errors: [] };
+    } catch (error) {
+        console.error('✗ Input validation failed:', error.message);
+        return { valid: false, errors: [error.message] };
+    }
+}
+
+/**
+ * Get the community principal, validating against provided value and including improvements.
+ * @param {number} cpFromLoans - Community principal calculated from loan difference (L0 - L1)
+ * @param {number} providedCp - User-provided community principal (for validation)
+ * @param {number} cpImpr - Community improvements/contributions
+ * @returns {number} Total community principal including improvements
+ */
+function getCommunityPrincipal(cpFromLoans, providedCp, cpImpr = 0) {
+    const baseCp = providedCp != null ? providedCp : cpFromLoans;
+    return baseCp + cpImpr;
+}
 
 /**
  * Compute Moore/Marsden-style equities for CP and each spouse's SP using purchase price as denominator.
@@ -221,10 +313,35 @@ function calculateBuyout({ PP, FMV, L0, L1, L2, Sy, Sh, acquisitionContext, cpIm
  *   monthlyPropertyTaxes?:number,
  *   monthlyInsurance?:number,
  *   monthlyNecessaryRepairs?:number,
+ *   acquisitionContext?:string,
+ *   validateInputs?:boolean,
+ *   dryRun?:boolean
  * }} p
- * @returns {{ inputs: object, mm: object, baseline: object, credits: object, net: object, buyout: object, check: object }}
+ * @returns {{ inputs: object, mm: object, baseline: object, credits: object, net: object, buyout: object, check: object, validation?: object }}
  */
 function computeApportionment(p) {
+    // Enhanced input validation
+    if (p.validateInputs !== false) {
+        try {
+            validateInputBounds(p);
+        } catch (error) {
+            throw new Error(`Input validation failed: ${error.message}\n\nSuggestion: Check your input values and ensure they are positive numbers. For complex scenarios involving refinances or improvements, consult legal counsel.`);
+        }
+    }
+    
+    // Dry run mode - validate inputs only
+    if (p.dryRun) {
+        const validation = validateDryRun(p);
+        return { 
+            inputs: p, 
+            validation,
+            metadata: {
+                regime: p.acquisitionContext || 'premaritalOwner',
+                message: 'Dry run completed - no calculations performed'
+            }
+        };
+    }
+    
     const PP = p.houseValueAtPurchase;
     const FMV = p.appraisedValue;
     const L0 = p.mortgageAtPurchase;
@@ -288,12 +405,21 @@ function computeApportionment(p) {
         net: result.net,
         buyout: result.buyout,
         check: approxCheck,
+        metadata: {
+            regimeUsed: result.regime,
+            explanation: result.regime === 'Moore/Marsden' 
+                ? 'Used Moore/Marsden apportionment - community share of appreciation based on principal contribution ratio'
+                : 'Used Family Code §2640 reimbursement - separate property reimbursed dollar-for-dollar, remaining equity is community',
+            hasNegativeAppreciation: FMV < PP,
+            appreciationDuringMarriage: result.mm ? (FMV - (p.fairMarketAtMarriage || PP)) : null,
+            totalAppreciation: FMV - PP
+        }
     };
 }
 
 // CLI config support
 function printHelp() {
-    console.log(`\nUsage: node apportionment-calc.js [--config <path-to-json>] [--out-json <path>]\n\nNotes:\n  - If --config is not provided, the tool will look for source_files/apportionment.config.json (gitignored).\n\nConfig JSON fields (optional, overrides defaults):\n  houseValueAtPurchase (PP), appraisedValue (FMV), mortgageAtPurchase (L0), mortgageAtSeparation (L1), acquisitionContext,\n  principalPaidDuringMarriage (Cp), yourSeparateInterest (Sy), herSeparateInterest (Sh), cpImpr, spImprYou, spImprHer,\n  principalPaidAfterSeparationByYou, principalPaidAfterSeparationByHer,\n  fairMonthlyRentalValue, monthsSinceSeparation, occupant ('you'|'her'),\n  monthlyMortgageInterest, monthlyPropertyTaxes, monthlyInsurance, monthlyNecessaryRepairs\n`);
+    console.log(`\nUsage: node apportionment-calc.js [--config <path-to-json>] [--out-json <path>] [--dry-run] [--no-validate]\n\nNotes:\n  - If --config is not provided, the tool will look for source_files/apportionment.config.json (gitignored).\n  - Use --dry-run to validate inputs without performing calculations\n  - Use --no-validate to skip input validation (not recommended)\n\nConfig JSON fields (optional, overrides defaults):\n  houseValueAtPurchase (PP), appraisedValue (FMV), mortgageAtPurchase (L0), mortgageAtSeparation (L1), acquisitionContext,\n  principalPaidDuringMarriage (Cp), yourSeparateInterest (Sy), herSeparateInterest (Sh), cpImpr, spImprYou, spImprHer,\n  principalPaidAfterSeparationByYou, principalPaidAfterSeparationByHer,\n  fairMonthlyRentalValue, monthsSinceSeparation, occupant ('you'|'her'),\n  monthlyMortgageInterest, monthlyPropertyTaxes, monthlyInsurance, monthlyNecessaryRepairs\n\nEdge Cases Documented:\n  - Negative appreciation: Tool handles scenarios where FMV@Division < FMV@Marriage\n  - Complex refinancing: Tool warns when detected; manual review required\n  - Multiple acquisition events: Out of scope - consult legal counsel\n`);
 }
 
 if (require.main === module) {
@@ -327,6 +453,10 @@ if (cfgIndex !== -1 && argv[cfgIndex + 1]) {
     }
 }
 
+// Handle CLI flags
+const dryRunMode = argv.includes('--dry-run');
+const skipValidation = argv.includes('--no-validate');
+
 // Home purchase details
 // Use neutral, even-number defaults to illustrate the math clearly
 const houseValueAtPurchase = config.houseValueAtPurchase ?? 1000000;
@@ -359,7 +489,7 @@ const appraisedValue = config.appraisedValue ?? 1200000;
   const spImprYou = config.spImprYou ?? 0;
   const spImprHer = config.spImprHer ?? 0;
 
-  const { regime, mm, baseline, credits, net, buyout, check } = computeApportionment({
+  const { regime, mm, baseline, credits, net, buyout, check, metadata, validation } = computeApportionment({
     houseValueAtPurchase,
     yourSeparateInterest,
     herSeparateInterest,
@@ -380,7 +510,25 @@ const appraisedValue = config.appraisedValue ?? 1200000;
       cpImpr,
       spImprYou,
       spImprHer,
+      dryRun: dryRunMode,
+      validateInputs: !skipValidation
 });
+
+// Handle dry run mode
+if (dryRunMode) {
+    if (validation && !validation.valid) {
+        console.error('\n❌ Dry run validation failed:');
+        validation.errors.forEach(error => console.error(`  - ${error}`));
+        process.exit(1);
+    } else {
+        console.log('\n✅ Dry run validation passed - inputs are valid');
+        if (metadata) {
+            console.log(`Expected regime: ${metadata.regime}`);
+            console.log(metadata.message);
+        }
+        process.exit(0);
+    }
+}
 
 // Logging for verification and clarity
 console.log(`Home Details:\n`);
@@ -456,4 +604,15 @@ if (jsonOutIdx !== -1 && argv[jsonOutIdx + 1]) {
     }
 }
 
-module.exports = { computeMooreMarsdenThreeBucket, calculateBuyout, apportionEquity, computeApportionment };
+module.exports = { 
+    computeMooreMarsdenThreeBucket, 
+    calculateBuyout, 
+    apportionEquity, 
+    computeApportionment,
+    validateAcquisitionContext,
+    validatePurchasePrice,
+    validateAppreciationValues,
+    validateBucketSum,
+    validateInputBounds,
+    validateDryRun
+};

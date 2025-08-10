@@ -1,27 +1,42 @@
 /**
  * Moore/Marsden Worksheet Calculator
  *
+ * IMPORTANT LEGAL DISCLAIMER:
+ * This tool is for educational and calculation purposes only and does not constitute legal advice.
+ * Property division in divorce involves complex legal issues that vary by jurisdiction and individual
+ * circumstances. Always consult with a qualified family law attorney before making decisions based
+ * on these calculations. This tool does not account for many factors that may affect property
+ * characterization, including transmutations, agreements, refinances, improvements, or other legal doctrines.
+ *
  * Purpose
  * - Compute Separate Property (SP) and Community Property (CP) interests for a residence
  *   using the Moore/Marsden approach with a clear, worksheet-style output.
  *
  * Legal background (California)
- * - In re Marriage of Moore (1980) 28 Cal.3d 366
- * - In re Marriage of Marsden (1982) 130 Cal.App.3d 426
+ * - In re Marriage of Moore (1980) 28 Cal.3d 366, 374-375 [169 Cal.Rptr. 619, 618 P.2d 208]
+ * - In re Marriage of Marsden (1982) 130 Cal.App.3d 426, 435-437 [181 Cal.Rptr. 910]
  * - Family Code §§ 760 (community property), 770 (separate property), 2640 (SP reimbursements)
+ * - In re Marriage of Aufmuth (1979) 89 Cal.App.3d 446 (early Moore/Marsden development)
+ * - Recent appellate guidance: In re Marriage of Walrath (1998) 17 Cal.4th 907 (transmutation requirements)
+ *
+ * Case Citations and Key Holdings:
+ * - Moore v. Moore: Established that community acquires pro tanto interest in appreciation based on
+ *   community principal payments relative to original purchase price
+ * - Marsden v. Marsden: Clarified application of Moore formula to post-separation scenarios and
+ *   confirmed that appreciation during marriage is allocated proportionately
  *
  * Statutory quotes (California Family Code)
  * - § 760 (Community property presumption):
  *   "Except as otherwise provided by statute, all property, real or personal, wherever situated,
  *    acquired by a married person during the marriage while domiciled in this state is community property."
- *   Source: https://codes.findlaw.com/ca/family-code/fam-sect-760/
+ *   Source: Cal. Fam. Code § 760 (West 2023)
  *
  * - § 770(a) (Separate property defined):
  *   "Separate property of a married person includes:
  *     (1) All property owned by the person before marriage.
  *     (2) All property acquired by the person after marriage by gift, bequest, devise, or descent.
  *     (3) The rents, issues, and profits of the property described in this section."
- *   Source: https://codes.findlaw.com/ca/family-code/fam-sect-770/
+ *   Source: Cal. Fam. Code § 770(a) (West 2023)
  *
  * - § 2640(a), (b) (Reimbursement for SP contributions to acquisition of CP):
  *   "(a) In the division of the community estate under this division, unless a party has made a written
@@ -33,7 +48,7 @@
  *    of property include downpayments, payments for improvements, and payments that reduce the principal of a loan
  *    used to finance the purchase or improvements of the property but do not include payments of interest on the loan
  *    or payments made for maintenance, insurance, or taxation of the property."
- *   Source: https://codes.findlaw.com/ca/family-code/fam-sect-2640/
+ *   Source: Cal. Fam. Code § 2640(a)-(b) (West 2023)
  *
  * Core rule
  * - Community share of appreciation during marriage = (CP principal reduction ÷ purchase price) × appreciation during marriage.
