@@ -77,7 +77,9 @@ function subtractLine4FromLine6(fairMarketAtMarriage, fairMarketAtDivision) {
  * @returns {number} proportion in [0,1]
  */
 function computeCommunityProportion(paymentsWithCommunityFunds, purchasePrice) {
-    return paymentsWithCommunityFunds / purchasePrice;
+    if (!(purchasePrice > 0)) throw new Error('Purchase price must be > 0');
+    const ratio = paymentsWithCommunityFunds / purchasePrice;
+    return Math.max(0, Math.min(1, ratio));
 }
 
 function multiplyLine8ByLine9(line8Result, line9Result) {
@@ -123,6 +125,25 @@ function computeMooreMarsden(purchasePrice, downPayment, paymentsWithSeparateFun
     return { line7Result, line8Result, line9Result, line10Result, line11Result, spInterest, cpInterest };
 }
 
+function reconcileIfPossible(input, worksheet) {
+    const { purchasePrice: PP, fairMarketAtDivision: FMVd, originalLoan, loanAtDivision: L2 } = input;
+    if (originalLoan == null || L2 == null) return;
+    const dp = input.downPayment ?? 0;
+    const spP = input.paymentsWithSeparateFunds ?? 0;
+    const cpP = input.paymentsWithCommunityFunds ?? 0;
+
+    const equityWorksheet = (dp + spP + cpP) + (FMVd - PP);
+    const equityLoans = FMVd - L2;
+
+    const impliedL0 = PP - dp;
+    if (originalLoan != null && Math.abs(originalLoan - impliedL0) > 0.01) {
+        console.warn(`Original loan mismatch: given ${originalLoan.toFixed(2)} vs implied ${(impliedL0).toFixed(2)}.`);
+    }
+    if (Math.abs(equityWorksheet - equityLoans) > 0.01) {
+        console.warn(`Equity mismatch: worksheet ${equityWorksheet.toFixed(2)} vs FMV-L2 ${equityLoans.toFixed(2)}. Check for refi/HELOC/improvements.`);
+    }
+}
+
 function calculateMooreMarsden(purchasePrice, downPayment, paymentsWithSeparateFunds, fairMarketAtMarriage, paymentsWithCommunityFunds, fairMarketAtDivision) {
     const { line7Result, line8Result, line9Result, line10Result, line11Result, spInterest, cpInterest } =
         computeMooreMarsden(purchasePrice, downPayment, paymentsWithSeparateFunds, fairMarketAtMarriage, paymentsWithCommunityFunds, fairMarketAtDivision);
@@ -145,10 +166,12 @@ function calculateMooreMarsden(purchasePrice, downPayment, paymentsWithSeparateF
     console.log(`---------------------------------------------------------------`);
     console.log(`12. Separate Property Interest (SP Interest):   ${currencyFormatter.format(spInterest)}`);
     console.log(`13. Community Property Interest (CP Interest):  ${currencyFormatter.format(cpInterest)}\n`);
+
+    return { line7Result, line8Result, line9Result, line10Result, line11Result, spInterest, cpInterest };
 }
 
 function printHelp() {
-    console.log(`\nUsage: node moore-marsden.js [--config <path-to-json>]\n\nConfig JSON fields (optional):\n  purchasePrice, downPayment, paymentsWithSeparateFunds, fairMarketAtMarriage,\n  paymentsWithCommunityFunds, fairMarketAtDivision\n`);
+    console.log(`\nUsage: node moore-marsden.js [--config <path-to-json>] [--out-json <path>] [--summary] [--no-explain] [--context <acquisitionContext>]\n\nConfig JSON fields (optional):\n  purchasePrice, downPayment, paymentsWithSeparateFunds, fairMarketAtMarriage,\n  paymentsWithCommunityFunds, fairMarketAtDivision,\n  originalLoan, loanAtDivision, acquisitionContext,\n  spPrincipalPreMarriage, spPrincipalDuringMarriage\n\nNotes:\n  - acquisitionContext: 'premaritalOwner' (default) or 'jointTitleDuringMarriage'\n  - If spPrincipalPreMarriage/spPrincipalDuringMarriage are provided, they will be summed into Line 3.\n`);
 }
 
 const argv = process.argv.slice(2);
@@ -184,6 +207,12 @@ if (cfgIndex !== -1 && argv[cfgIndex + 1]) {
     }
 }
 
+// Optional inline context override via CLI
+const ctxIdx = argv.indexOf('--context');
+if (ctxIdx !== -1 && argv[ctxIdx + 1]) {
+    config.acquisitionContext = argv[ctxIdx + 1];
+}
+
 // Neutral, even-number defaults for clarity
 const defaults = {
     purchasePrice: 400000,
@@ -196,6 +225,13 @@ const defaults = {
 
 const input = { ...defaults, ...config };
 
+// Support optional split SP principal fields; sum into Line 3 if provided
+if (config.spPrincipalPreMarriage != null || config.spPrincipalDuringMarriage != null) {
+    const spPre = Number(config.spPrincipalPreMarriage || 0);
+    const spDuring = Number(config.spPrincipalDuringMarriage || 0);
+    input.paymentsWithSeparateFunds = spPre + spDuring;
+}
+
 // Run the calculation and optionally emit JSON
 const worksheet = computeMooreMarsden(
     input.purchasePrice,
@@ -205,6 +241,20 @@ const worksheet = computeMooreMarsden(
     input.paymentsWithCommunityFunds,
     input.fairMarketAtDivision
 );
+
+// Context and sanity warnings
+if (input.fairMarketAtDivision < input.fairMarketAtMarriage) {
+    console.warn('Warning: FMV@Division < FMV@Marriage (negative appreciation during marriage).');
+}
+if (input.acquisitionContext === 'jointTitleDuringMarriage') {
+    console.warn('Context: jointTitleDuringMarriage detected. Use §2640 reimbursement method; MM is not the correct regime.');
+}
+// Refi/HELOC scope warning
+if (argv.includes('--refi') || (input.purchasePrice != null && input.downPayment != null && input.purchasePrice < input.downPayment)) {
+    console.warn('Refi/HELOC or purchase price < down payment indicated. This worksheet does not model refinances/HELOCs; results may not reconcile.');
+}
+
+reconcileIfPossible(input, worksheet);
 
 function printHeader() {
     if (noExplain) return;
@@ -238,8 +288,8 @@ function printSummary() {
     const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
     console.log(`12. Separate Property Interest (SP Interest):   ${currencyFormatter.format(worksheet.spInterest)} = Down Payment (${currencyFormatter.format(input.downPayment)}) + SP Principal (${currencyFormatter.format(input.paymentsWithSeparateFunds)}) + Line 7 (${currencyFormatter.format(worksheet.line7Result)}) + Line 11 (${currencyFormatter.format(worksheet.line11Result)})`);
     console.log(`13. Community Property Interest (CP Interest):  ${currencyFormatter.format(worksheet.cpInterest)} = CP Principal (${currencyFormatter.format(input.paymentsWithCommunityFunds)}) + Line 10 (${currencyFormatter.format(worksheet.line10Result)})\n`);
-    if (worksheet.line9Result > 1) {
-        console.warn('Warning: CP proportion exceeds 100%. Check inputs for purchase price and principal amounts.');
+    if (input.paymentsWithCommunityFunds > input.purchasePrice) {
+        console.warn('Warning: CP principal exceeds purchase price. Check inputs for purchase price and principal amounts.');
     }
 }
 

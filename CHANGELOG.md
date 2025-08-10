@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.5.0] - 2025-08-10
+
+PR: [#11](https://github.com/jozecuervo/ofw-tools/pull/11)
+
+### Added
+- Apportionment calculator: regime switch between Moore/Marsden and §2640 (joint title during marriage) via `acquisitionContext`.
+- Separate Watts/Epstein ledgers applied after property interests; added FRV offsets and occupant handling.
+- Integrity checks: warn when `Cp ≠ L0 − L1`, throw if `PP ≤ 0`, warn when baseline sum ≠ `FMV − L2`.
+
+### Changed
+- Moore/Marsden computation: orthodox per-PP appreciation allocation for each bucket (CP, Sy, Sh).
+- §2640 branch: clamp negative CP equity to zero with warning; large SP reimbursements sanity warning.
+- README updated with inputs (`acquisitionContext`, improvements), regime notes, and examples.
+
+### Tests
+- New unit tests for apportionment MM/credits and §2640 branch; all suites green.
+
 ## [1.4.1] - 2025-08-10
 
 PR: [#10](https://github.com/jozecuervo/ofw-tools/pull/10)

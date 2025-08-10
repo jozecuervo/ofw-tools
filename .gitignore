@@ -1,13 +1,7 @@
+.DS_Store
+.vscode
+node_modules
+output
 # Temporary AI-generated prompt artifacts
 prompts/temp-*
-
-source_files/moore-marsden.config.json
-source_files/apportionment.config.json
-output/
-**/node_modules
-.DS_Store
 source_files
-source_files/*
-.vscode
-output
-output/*
