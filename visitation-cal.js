@@ -37,7 +37,6 @@ const {
  */
 function getFirstAnchorOfMonthLocal(year, month, anchorOrdinal) {
     return getFirstAnchorOfMonth(year, month, anchorOrdinal);
-}
 
 /**
  * Calculate the start (Sunday) of Week 1 (first week containing the anchor weekday).
