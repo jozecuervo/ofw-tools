@@ -7,6 +7,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [1.2.1] - 2025-08-10
 
+PR: [#6](https://github.com/jozecuervo/ofw-tools/pull/6)
+
 ### Changed
 - Centralized shared date helpers into `utils/date.js`:
   - `weekdayNames`, `nameToOrdinal`, `daysInMonth`, `getNthOccurrenceDate`, `getFifthOccurrenceDate`
