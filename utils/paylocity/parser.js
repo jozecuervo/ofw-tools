@@ -188,7 +188,7 @@ function parsePaylocityPaystub(rawText) {
   // Helper to scan lines for a label and pick the nearest currency on the same or next line
   function extractFromLines(labelSynonyms, pick = 'first') {
     const labelRegex = new RegExp(labelSynonyms.map(s => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")).join("|"), "i");
-    const moneyRx = /\(?-?\$?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})\)?|\(?-?[0-9]+(?:\.[0-9]{2})\)?/g;
+    const moneyRx = MONEY_REGEX;
     for (let i = 0; i < lines.length; i++) {
       if (labelRegex.test(lines[i])) {
         // Collect money tokens on same line
