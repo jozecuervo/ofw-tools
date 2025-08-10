@@ -296,6 +296,7 @@ function printHelp() {
     console.log(`\nUsage: node apportionment-calc.js [--config <path-to-json>] [--out-json <path>]\n\nNotes:\n  - If --config is not provided, the tool will look for source_files/apportionment.config.json (gitignored).\n\nConfig JSON fields (optional, overrides defaults):\n  houseValueAtPurchase (PP), appraisedValue (FMV), mortgageAtPurchase (L0), mortgageAtSeparation (L1), acquisitionContext,\n  principalPaidDuringMarriage (Cp), yourSeparateInterest (Sy), herSeparateInterest (Sh), cpImpr, spImprYou, spImprHer,\n  principalPaidAfterSeparationByYou, principalPaidAfterSeparationByHer,\n  fairMonthlyRentalValue, monthsSinceSeparation, occupant ('you'|'her'),\n  monthlyMortgageInterest, monthlyPropertyTaxes, monthlyInsurance, monthlyNecessaryRepairs\n`);
 }
 
+if (require.main === module) {
 const argv = process.argv.slice(2);
 if (argv.includes('-h') || argv.includes('--help')) {
     printHelp();
@@ -339,26 +340,26 @@ const mortgageAtSeparation = config.mortgageAtSeparation ?? 100000;
 
 // Home details at division of assets (current value at division)
 const appraisedValue = config.appraisedValue ?? 1200000;
-const principalPaidAfterSeparationByHer = config.principalPaidAfterSeparationByHer ?? 0;
-const principalPaidAfterSeparationByYou = config.principalPaidAfterSeparationByYou ?? 0;
-const remainingMortgage = mortgageAtSeparation - principalPaidAfterSeparationByHer - principalPaidAfterSeparationByYou;  // Remaining mortgage after post-separation principal payments.
+  const principalPaidAfterSeparationByHer = config.principalPaidAfterSeparationByHer ?? 0;
+  const principalPaidAfterSeparationByYou = config.principalPaidAfterSeparationByYou ?? 0;
+  const remainingMortgage = mortgageAtSeparation - principalPaidAfterSeparationByHer - principalPaidAfterSeparationByYou;  // Remaining mortgage after post-separation principal payments.
 
 // Credits
-const monthsSinceSeparation = config.monthsSinceSeparation ?? 0;
-const fairMonthlyRentalValue = config.fairMonthlyRentalValue ?? 0;
-const occupant = config.occupant ?? null; // 'you' | 'her' | null
-// Offsets potentially reducing Watts charge
-const monthlyMortgageInterest = config.monthlyMortgageInterest ?? 0;
-const monthlyPropertyTaxes = config.monthlyPropertyTaxes ?? 0;
-const monthlyInsurance = config.monthlyInsurance ?? 0;
-const monthlyNecessaryRepairs = config.monthlyNecessaryRepairs ?? 0;
+  const monthsSinceSeparation = config.monthsSinceSeparation ?? 0;
+  const fairMonthlyRentalValue = config.fairMonthlyRentalValue ?? 0;
+  const occupant = config.occupant ?? null; // 'you' | 'her' | null
+  // Offsets potentially reducing Watts charge
+  const monthlyMortgageInterest = config.monthlyMortgageInterest ?? 0;
+  const monthlyPropertyTaxes = config.monthlyPropertyTaxes ?? 0;
+  const monthlyInsurance = config.monthlyInsurance ?? 0;
+  const monthlyNecessaryRepairs = config.monthlyNecessaryRepairs ?? 0;
 
-const acquisitionContext = config.acquisitionContext ?? 'premaritalOwner';
-const cpImpr = config.cpImpr ?? 0;
-const spImprYou = config.spImprYou ?? 0;
-const spImprHer = config.spImprHer ?? 0;
+  const acquisitionContext = config.acquisitionContext ?? 'premaritalOwner';
+  const cpImpr = config.cpImpr ?? 0;
+  const spImprYou = config.spImprYou ?? 0;
+  const spImprHer = config.spImprHer ?? 0;
 
-const { regime, mm, baseline, credits, net, buyout, check } = computeApportionment({
+  const { regime, mm, baseline, credits, net, buyout, check } = computeApportionment({
     houseValueAtPurchase,
     yourSeparateInterest,
     herSeparateInterest,
@@ -367,18 +368,18 @@ const { regime, mm, baseline, credits, net, buyout, check } = computeApportionme
     mortgageAtSeparation,
     appraisedValue,
     principalPaidAfterSeparationByHer,
-    principalPaidAfterSeparationByYou,
+      principalPaidAfterSeparationByYou,
     monthsSinceSeparation,
-    fairMonthlyRentalValue,
-    occupant,
-    monthlyMortgageInterest,
-    monthlyPropertyTaxes,
-    monthlyInsurance,
-    monthlyNecessaryRepairs,
-    acquisitionContext,
-    cpImpr,
-    spImprYou,
-    spImprHer,
+      fairMonthlyRentalValue,
+      occupant,
+      monthlyMortgageInterest,
+      monthlyPropertyTaxes,
+      monthlyInsurance,
+      monthlyNecessaryRepairs,
+      acquisitionContext,
+      cpImpr,
+      spImprYou,
+      spImprHer,
 });
 
 // Logging for verification and clarity
@@ -389,44 +390,44 @@ console.log(`Your Separate Interest: $${yourSeparateInterest}`);
 console.log(`Her Separate Interest: $${herSeparateInterest}`);
 console.log(`Mortgage remaining at Separation: $${mortgageAtSeparation}`);
 
-console.log(`\nPrincipal contributions (during marriage):\n`);
-console.log(`Community Principal Reduction (Cp): $${principalPaidDuringMarriage}`);
-console.log(`Your Separate Contributions (Sy): $${yourSeparateInterest}`);
-console.log(`Her Separate Contributions (Sh): $${herSeparateInterest}`);
-console.log(`Post-Separation Principal by You (Epstein): $${principalPaidAfterSeparationByYou}`);
-console.log(`Post-Separation Principal by Her (Epstein): $${principalPaidAfterSeparationByHer}`);
+  console.log(`\nPrincipal contributions (during marriage):\n`);
+  console.log(`Community Principal Reduction (Cp): $${principalPaidDuringMarriage}`);
+  console.log(`Your Separate Contributions (Sy): $${yourSeparateInterest}`);
+  console.log(`Her Separate Contributions (Sh): $${herSeparateInterest}`);
+  console.log(`Post-Separation Principal by You (Epstein): $${principalPaidAfterSeparationByYou}`);
+  console.log(`Post-Separation Principal by Her (Epstein): $${principalPaidAfterSeparationByHer}`);
 
 console.log(`\nCalculate current home equity \n`);
 console.log(`Appraised Value: $${appraisedValue}`);
-console.log(`Current Remaining Mortgage (L2): $${remainingMortgage}`);
-console.log(`Current Net Home value after Mortgage: $${(appraisedValue - remainingMortgage)}`);
+  console.log(`Current Remaining Mortgage (L2): $${remainingMortgage}`);
+  console.log(`Current Net Home value after Mortgage: $${(appraisedValue - remainingMortgage)}`);
 
-console.log(`\nRegime: ${regime}`);
-if (regime === 'Moore/Marsden' && mm) {
-  console.log(`Appreciation during marriage (A): $${(appraisedValue - houseValueAtPurchase)}`);
-  console.log(`CP share of appreciation: $${mm.cp.shareOfAppreciation.toFixed(2)}`);
-  console.log(`Your SP share of appreciation: $${mm.you.shareOfAppreciation.toFixed(2)}`);
-  console.log(`Her SP share of appreciation: $${mm.her.shareOfAppreciation.toFixed(2)}`);
-} else if (regime === '2640') {
-  console.log(`§2640 reimbursements only (no SP share of appreciation).`);
-  console.log(`Note: Title in joint form → CP under Fam. Code §2581; appreciation and remaining equity are CP absent a written transmutation (anti‑Lucas/§2640).`);
-}
+  console.log(`\nRegime: ${regime}`);
+  if (regime === 'Moore/Marsden' && mm) {
+    console.log(`Appreciation during marriage (A): $${(appraisedValue - houseValueAtPurchase)}`);
+    console.log(`CP share of appreciation: $${mm.cp.shareOfAppreciation.toFixed(2)}`);
+    console.log(`Your SP share of appreciation: $${mm.you.shareOfAppreciation.toFixed(2)}`);
+    console.log(`Her SP share of appreciation: $${mm.her.shareOfAppreciation.toFixed(2)}`);
+  } else if (regime === '2640') {
+    console.log(`§2640 reimbursements only (no SP share of appreciation).`);
+    console.log(`Note: Title in joint form → CP under Fam. Code §2581; appreciation and remaining equity are CP absent a written transmutation (anti‑Lucas/§2640).`);
+  }
 
-console.log(`\nEquities (before Watts/Epstein credits): \n`);
-console.log(`Community equity (Cp + CP share of A): $${baseline.community.toFixed(2)}`);
-console.log(`Your SP equity (Sy + SP_y share of A): $${baseline.yourSP.toFixed(2)}`);
-console.log(`Her SP equity (Sh + SP_h share of A): $${baseline.herSP.toFixed(2)}`);
-console.log(`Your baseline (SP + 1/2 CP): $${baseline.yourBaseline.toFixed(2)}`);
-console.log(`Her baseline (SP + 1/2 CP): $${baseline.herBaseline.toFixed(2)}`);
+  console.log(`\nEquities (before Watts/Epstein credits): \n`);
+  console.log(`Community equity (Cp + CP share of A): $${baseline.community.toFixed(2)}`);
+  console.log(`Your SP equity (Sy + SP_y share of A): $${baseline.yourSP.toFixed(2)}`);
+  console.log(`Her SP equity (Sh + SP_h share of A): $${baseline.herSP.toFixed(2)}`);
+  console.log(`Your baseline (SP + 1/2 CP): $${baseline.yourBaseline.toFixed(2)}`);
+  console.log(`Her baseline (SP + 1/2 CP): $${baseline.herBaseline.toFixed(2)}`);
 
-console.log(`\nCredits (applied after MM):\n`);
-console.log(`Watts occupant: ${occupant ?? 'n/a'}`);
-console.log(`Watts gross (0.5 x FRV x months): $${(0.5 * fairMonthlyRentalValue * monthsSinceSeparation).toFixed(2)}`);
-const offsetsMonthlyTotal = monthlyMortgageInterest + monthlyPropertyTaxes + monthlyInsurance + monthlyNecessaryRepairs;
-console.log(`Watts offsets monthly (interest+taxes+insurance+repairs): $${offsetsMonthlyTotal.toFixed(2)}`);
-console.log(`Watts net charge: $${credits.watts.net.toFixed(2)}`);
-console.log(`Epstein (You): $${credits.epstein.you}`);
-console.log(`Epstein (Her): $${credits.epstein.her}`);
+  console.log(`\nCredits (applied after MM):\n`);
+  console.log(`Watts occupant: ${occupant ?? 'n/a'}`);
+  console.log(`Watts gross (0.5 x FRV x months): $${(0.5 * fairMonthlyRentalValue * monthsSinceSeparation).toFixed(2)}`);
+  const offsetsMonthlyTotal = monthlyMortgageInterest + monthlyPropertyTaxes + monthlyInsurance + monthlyNecessaryRepairs;
+  console.log(`Watts offsets monthly (interest+taxes+insurance+repairs): $${offsetsMonthlyTotal.toFixed(2)}`);
+  console.log(`Watts net charge: $${credits.watts.net.toFixed(2)}`);
+  console.log(`Epstein (You): $${credits.epstein.you}`);
+  console.log(`Epstein (Her): $${credits.epstein.her}`);
 
 // Step 4: Calculate Buyout Amounts with Watts and Epstein Credits
 // Legal References for buyout adjustments: Moore/Marsden, Watts, Epstein, and Family Code Section 2030 for attorney fees.
@@ -437,9 +438,9 @@ console.log(`\nBuyout amounts after credits:\n`);
 console.log(`You would need to pay her: $${buyoutAmounts.yourBuyout.toFixed(2)} to buy her out.`);
 console.log(`She would need to pay you: $${buyoutAmounts.herBuyout.toFixed(2)} to buy you out.`);
 
-if (Math.abs((check.baselineSum) - (check.equityAtValuation)) > 0.01) {
-    console.warn(`\nEquity mismatch: baseline sum $${check.baselineSum.toFixed(2)} vs equity at valuation $${check.equityAtValuation.toFixed(2)}.\nReview L0/L1/L2, PP, improvements, or context selection.`);
-}
+  if (Math.abs((check.baselineSum) - (check.equityAtValuation)) > 0.01) {
+      console.warn(`\nEquity mismatch: baseline sum $${check.baselineSum.toFixed(2)} vs equity at valuation $${check.equityAtValuation.toFixed(2)}.\nReview L0/L1/L2, PP, improvements, or context selection.`);
+  }
 
 // Optional JSON output
 const jsonOutIdx = argv.indexOf('--out-json');
@@ -447,11 +448,12 @@ if (jsonOutIdx !== -1 && argv[jsonOutIdx + 1]) {
     const outPath = argv[jsonOutIdx + 1];
     try {
         const { writeJson } = require('./utils/fs');
-        writeJson(outPath, { inputs: config, regime, mm, baseline, credits, net, buyout, check });
+          writeJson(outPath, { inputs: config, regime, mm, baseline, credits, net, buyout, check });
         console.log(`\nWrote detailed results to ${outPath}`);
     } catch (e) {
         console.error('Failed to write --out-json file:', e.message);
+      }
     }
 }
 
-module.exports = { computeMooreMarsdenThreeBucket, calculateBuyout, apportionEquity };
+module.exports = { computeMooreMarsdenThreeBucket, calculateBuyout, apportionEquity, computeApportionment };

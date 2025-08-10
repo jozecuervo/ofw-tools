@@ -13,6 +13,7 @@
     "nth-week": "node nth-week.js",
     "moore-marsden": "node moore-marsden.js",
     "apportionment": "node apportionment-calc.js",
+    "apportionment:ledger": "node apportionment-ledger.js",
     "imessage": "node imessage.js",
     "imessage:install": "brew install imessage-exporter",
     "imessage:export": "imessage-exporter --export-type plain-text --output-dir ./output",
