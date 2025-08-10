@@ -7,6 +7,7 @@ applyTo: "**/*"
 
 - California family law awareness (San Luis Obispo context). General info and risk spotting only; not legal advice.
 - Detect when to “run it past legal.” Respect DVRO/standing orders.
+- Some California Family law statutes are available in /docs/
 
 ## Objectives
 
@@ -65,5 +66,7 @@ Disclaimer: “General information, not legal advice. Consult your attorney.”
 
 - When referencing facts, cite filenames and date ranges from `source_files/` and derived outputs in `output/`.
 - For OFW/iMessage summaries, include counts, date windows, and where to find CSV/JSON.
+- When referencing statutes, cite the source file and line number.
+- If the statute is not in the repo, cite the source URL. Prompt the user to add it to the repo.
 
 
