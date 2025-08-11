@@ -15,13 +15,14 @@ const path = require("path");
 const { parsePdf } = require("./utils");
 const { writeFile, ensureDir } = require("./utils");
 const { parsePaylocityPaystub, normalizeText } = require("./utils/paylocity/parser");
+const { computeMonthlyAnalysis } = require("./utils/paylocity/gross-monthly-summary");
 
 function printHelp() {
   console.log(`
 Usage: node paylocity.js <source-folder> [--out <file.csv>] [--glob <pattern>]
 
 Options:
-  --out <file.csv>   Destination CSV path. Default: <source-folder>/paychecks.csv
+  --out <file.csv>   Destination CSV path. Default: ./output/paychecks.csv
   --glob <pattern>   Only include PDFs whose filename contains this substring (case-insensitive)
   -h, --help         Show this help
 `);
@@ -123,7 +124,7 @@ async function main() {
     if (val && !val.startsWith("--")) outCsv = path.resolve(val);
   }
   if (!outCsv) {
-    outCsv = path.join(sourceDir, "paychecks.csv");
+    outCsv = path.resolve(process.cwd(), "output", "paychecks.csv");
   }
 
   let nameFilter = null;
@@ -144,6 +145,7 @@ async function main() {
 
   const header = buildHeaderRow();
   const rows = [header];
+  const analysisInput = [];
 
   // Optional debug text dump
   const debugDir = rawArgs.includes("--debug-text") ? path.join(sourceDir, "_debug_text") : null;
@@ -153,6 +155,7 @@ async function main() {
     try {
       const record = await parseOnePdf(filePath, debugDir, useTxt);
       rows.push(recordToRow(filePath, record));
+      analysisInput.push({ payDate: record.payDate, grossPay: record.grossPay, netPay: record.netPay });
       console.log(`Parsed: ${path.basename(filePath)}`);
     } catch (err) {
       console.error(`Failed to parse ${filePath}:`, err.message || err);
@@ -164,6 +167,69 @@ async function main() {
   writeFile(outCsv, csv);
   console.log(`\nWrote ${inputFiles.length} row(s) to ${outCsv}`);
   if (debugDir) console.log(`Normalized text dumps written to ${debugDir}`);
+
+  // Monthly 26/12 analysis CSV
+  // Aggregate multiple records that fall on the same pay date to avoid duplicate rows
+  function parseMMDDYYYYToDate(value) {
+    if (!value || typeof value !== "string") return null;
+    const m = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!m) return null;
+    const month = Number(m[1]);
+    const day = Number(m[2]);
+    const year = Number(m[3]);
+    const d = new Date(Date.UTC(year, month - 1, day));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  const aggregatedByPayDateMap = new Map();
+  for (const r of analysisInput) {
+    if (!r || !r.payDate) continue;
+    const key = r.payDate;
+    const existing = aggregatedByPayDateMap.get(key) || { payDate: key, grossPay: 0, netPay: 0 };
+    const addGross = typeof r.grossPay === 'number' && Number.isFinite(r.grossPay) ? r.grossPay : 0;
+    const addNet = typeof r.netPay === 'number' && Number.isFinite(r.netPay) ? r.netPay : 0;
+    existing.grossPay = (existing.grossPay || 0) + addGross;
+    existing.netPay = (existing.netPay || 0) + addNet;
+    aggregatedByPayDateMap.set(key, existing);
+  }
+  const aggregatedByPayDate = Array.from(aggregatedByPayDateMap.values()).sort((a, b) => {
+    const da = parseMMDDYYYYToDate(a.payDate);
+    const db = parseMMDDYYYYToDate(b.payDate);
+    if (da && db) return da - db;
+    return String(a.payDate).localeCompare(String(b.payDate));
+  });
+
+  const analysis = computeMonthlyAnalysis(aggregatedByPayDate);
+  const monthlyHeader = [
+    "Pay Date",
+    "Gross Pay",
+    "Net Pay",
+    "Monthly Gross (26/12)",
+    "12M Trailing Avg Gross",
+    "Monthly Net (26/12)",
+  ].join(",");
+
+  const monthlyRows = [monthlyHeader];
+  for (const r of analysis) {
+    const row = [
+      r.payDate || "",
+      r.grossPay != null ? r.grossPay.toFixed(2) : "",
+      r.netPay != null ? r.netPay.toFixed(2) : "",
+      r.monthlyGross_26_12 != null ? r.monthlyGross_26_12.toFixed(2) : "",
+      r.trailingAvgGross_12M != null ? r.trailingAvgGross_12M.toFixed(2) : "",
+      r.monthlyNet_26_12 != null ? r.monthlyNet_26_12.toFixed(2) : "",
+    ].map(toCsvValue).join(",");
+    monthlyRows.push(row);
+  }
+
+  const monthlyCsv = monthlyRows.join("\n") + "\n";
+  const monthlyOutCsv = path.join(
+    path.dirname(outCsv),
+    path.basename(outCsv).replace(/\.csv$/i, "") + "_monthly.csv"
+  );
+  ensureDir(path.dirname(monthlyOutCsv));
+  writeFile(monthlyOutCsv, monthlyCsv);
+  console.log(`Wrote ${analysis.length} row(s) to ${monthlyOutCsv}`);
 }
 
 if (require.main === module) {
