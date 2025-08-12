@@ -66,12 +66,15 @@ function formatWeeklyTop2Csv(stats) {
   const [first, second] = getGlobalTopNSenders(stats, 2);
   const nameA = first || '';
   const nameB = second || '';
+  const initialA = nameA.charAt(0).toUpperCase();
+  const initialB = nameB.charAt(0).toUpperCase();
 
-  // Header includes Week label and ISO start/end to match main CSV conventions
-  let csvOutput = `Week,Week Start,Week End,Sent ${nameA},Sent ${nameB},Total Words ${nameA},Total Words ${nameB},Read Time ${nameA},Read Time ${nameB},Sent ${nameA},Sent ${nameB},Sen. N ${nameA},Sen. N ${nameB},Tone ${nameA},Tone ${nameB}` + "\n";
+  // Header: only Week Start for date, drop human Week and Week End
+  let csvOutput = `Week Start,Sent ${initialA},Sent ${initialB},Total Words ${initialA},Total Words ${initialB},Read Time ${initialA},Read Time ${initialB},Sentiment ${initialA},Sentiment ${initialB},Sentiment Natural ${initialA},Sentiment Natural ${initialB},Tone ${initialA},Tone ${initialB}` + "\n";
 
   const weeks = Object.keys(stats);
   weeks.forEach(week => {
+    const w = stats[week] || {};
     const a = w[nameA] || {};
     const b = w[nameB] || {};
     const { startISO, endISO } = parseWeekLabelToStartEnd(week);
