@@ -23,7 +23,6 @@ const path = require('path');
 
 const { parsePdf } = require('./utils');
 const { writeFile, writeJson } = require('./utils');
-const { formatDate } = require('./utils');
 const { processMessages } = require('./utils/ofw/parser');
 const { computeDerivedMetrics } = require('./utils/ofw/metrics');
 const { accumulateStats } = require('./utils/ofw/stats');
@@ -115,31 +114,6 @@ function writeJsonFile(data) {
         }
     });
 }
-const messageTemplate = (message, index, total) => {
-    const {
-        sentDate,
-        sender,
-        recipientReadTimes,
-        wordCount,
-        sentiment,
-        sentiment_natural,
-        subject,
-        body,
-    } = message;
-    return `
------------------------------------------------------
-## Message ${index + 1} of ${total}
-- Sent: ${formatDate(sentDate)}
-- From: ${sender}
-- To:
-${Object.entries(recipientReadTimes).map(([recipient, firstViewed]) => `   - ${recipient}: ${formatDate(firstViewed)}`).join('\n')}
-- Word Count: ${wordCount}, Sentiment: ${sentiment}, ${sentiment_natural}
-- Subject: ${subject}
-
-${body}
-`};
-
-
 /**
  * Write a per-message Markdown file next to the input PDF.
  * @param {{ messages:Array<object>, directory:string, fileNameWithoutExt:string }} data
@@ -151,7 +125,7 @@ function writeMarkDownFile(data) {
             const { messages, directory, fileNameWithoutExt } = data;
             let markdownContent = '';
             messages.forEach((message, index) => {
-                const messageContent = messageTemplate(message, index, messages.length);
+                const messageContent = formatMessageMarkdown(message, index, messages.length);
                 markdownContent += messageContent;
             });
             const outDir = path.resolve(process.cwd(), 'output');
