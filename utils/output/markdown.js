@@ -1,5 +1,17 @@
 const { formatDate } = require('../date');
 
+function createNameFilter(excludePatterns = []) {
+  const patterns = Array.isArray(excludePatterns)
+    ? excludePatterns.filter(Boolean).map(s => String(s).toLowerCase())
+    : [];
+  return function shouldHide(name) {
+    if (!name || name === 'undefined') return true;
+    if (/^\s*To:/i.test(name)) return true;
+    const lower = String(name).toLowerCase();
+    return patterns.some(p => p && lower.includes(p));
+  };
+}
+
 function formatMessageMarkdown(message, index, total) {
   const {
     sentDate,
@@ -26,13 +38,7 @@ ${body}
 }
 
 function formatTotalsMarkdown(totals, options = {}) {
-  const excludePatterns = Array.isArray(options.excludePatterns) ? options.excludePatterns : [];
-  const shouldHide = (name) => {
-    if (!name || name === 'undefined') return true;
-    if (/^\s*To:/i.test(name)) return true;
-    const lower = name.toLowerCase();
-    return excludePatterns.some(p => p && lower.includes(p));
-  };
+  const shouldHide = createNameFilter(options.excludePatterns);
   let out = [];
   out.push('\n');
   let header = '| Name             | Sent | Words | View Time | Avg View Time | Avg. Sentiment | Sentiment ntrl |';
@@ -57,13 +63,7 @@ function formatTotalsMarkdown(totals, options = {}) {
 }
 
 function formatWeeklyMarkdown(stats, options = {}) {
-  const excludePatterns = Array.isArray(options.excludePatterns) ? options.excludePatterns : [];
-  const shouldHide = (name) => {
-    if (!name || name === 'undefined') return true;
-    if (/^\s*To:/i.test(name)) return true;
-    const lower = name.toLowerCase();
-    return excludePatterns.some(p => p && lower.includes(p));
-  };
+  const shouldHide = createNameFilter(options.excludePatterns);
 
   let out = [];
   let header = '| Week                  | Name             | Sent | Words | Avg View Time | Avg. Sentiment | Sentiment ntrl |';
@@ -92,6 +92,6 @@ function formatWeeklyMarkdown(stats, options = {}) {
   return out.join('\n');
 }
 
-module.exports = { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown };
+module.exports = { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown, createNameFilter };
 
 

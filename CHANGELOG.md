@@ -11,6 +11,15 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - `formatWeeklyCsv` function to output all CSV data across all weeks.
 - `formatWeeklyTop2Csv` function to output CSV for the top 2 senders across all weeks.
 
+### Changed
+- DRY and pipeline updates for OFW:
+  - Moved week-range parsing and ISO helpers to `utils/date.js` (`parseWeekLabelToStartEnd`, `toISODate`).
+  - CSV Top2 header standardized to start with `Week Start,Sent …`.
+  - Removed duplicate message template in `ofw.js`; `writeMarkDownFile` now uses `formatMessageMarkdown`.
+  - Introduced generic CSV writer `outputCsvWith()` used for weekly and Top2 outputs.
+  - Centralized name filtering via `createNameFilter()` reused by totals/weekly Markdown.
+  - Sentiment computation moved from parser to metrics; `computeDerivedMetrics` always computes from message body.
+
 ## [1.7.0] - 2025-08-10
 
 ### Changed
