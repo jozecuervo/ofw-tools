@@ -1,5 +1,18 @@
 const { getWeekString } = require('../date');
 
+const defaultStats = {
+  messagesSent: 0,
+  messagesRead: 0,
+  totalReadTime: 0,
+  totalWords: 0,
+  sentiment: 0,
+  sentiment_natural: 0,
+  sentiment_per_word: 0,
+  natural_per_word: 0,
+  avgSentimentNatural: 0,
+  averageReadTime: 0,
+};
+
 /**
  * Accumulate weekly and total statistics from parsed messages.
  * @param {Array<object>} messages
@@ -18,27 +31,13 @@ function accumulateStats(messages) {
 
     if (!totals[sender]) {
       totals[sender] = {
-        messagesSent: 0,
-        messagesRead: 0,
-        totalReadTime: 0,
-        totalWords: 0,
-        sentiment: 0,
-        sentiment_natural: 0,
-        avgSentimentNatural: 0,
-        averageReadTime: 0,
+        ...defaultStats,
       };
     }
     if (!stats[weekString]) stats[weekString] = {};
     if (!stats[weekString][sender]) {
       stats[weekString][sender] = {
-        messagesSent: 0,
-        messagesRead: 0,
-        totalReadTime: 0,
-        totalWords: 0,
-        sentiment: 0,
-        sentiment_natural: 0,
-        avgSentimentNatural: 0,
-        averageReadTime: 0,
+        ...defaultStats,
       };
     }
 
@@ -59,22 +58,12 @@ function accumulateStats(messages) {
 
         if (!totals[recipient]) {
           totals[recipient] = {
-            messagesSent: 0,
-            messagesRead: 0,
-            totalReadTime: 0,
-            totalWords: 0,
-            sentiment: 0,
-            sentiment_natural: 0,
+            ...defaultStats,
           };
         }
         if (!stats[weekString][recipient]) {
           stats[weekString][recipient] = {
-            messagesSent: 0,
-            messagesRead: 0,
-            totalReadTime: 0,
-            totalWords: 0,
-            sentiment: 0,
-            sentiment_natural: 0,
+            ...defaultStats,
           };
         }
         stats[weekString][recipient].messagesRead++;
