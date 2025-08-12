@@ -39,7 +39,7 @@ function formatWeeklyTop2Csv(stats) {
     const toneA = (w[nameA] && Number.isFinite(Number(w[nameA].tone))) ? w[nameA].tone : 0;
     const toneB = (w[nameB] && Number.isFinite(Number(w[nameB].tone))) ? w[nameB].tone : 0;
     const row = [
-      week || '',
+      startISO,
       safeInt(a.messagesSent),
       safeInt(b.messagesSent),
       safeInt(a.totalWords),

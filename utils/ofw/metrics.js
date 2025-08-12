@@ -11,6 +11,7 @@ const analyzer = new natural.SentimentAnalyzer('English', natural.PorterStemmer,
  * - sentiment_natural: Natural AFINN score
  * - sentiment_per_word: sentiment ÷ max(1, wordCount)
  * - natural_per_word: sentiment_natural ÷ max(1, wordCount)
+ * - tone: normalized composite using repo scaling (avg of s/12 and n/0.2 clamped to [-1,1])
  *
  * @param {Array<object>} messages
  * @returns {Array<object>} same array (mutated) for convenience
@@ -35,8 +36,18 @@ function computeDerivedMetrics(messages) {
     const denom = Math.max(1, wordCount);
     message.sentiment_per_word = s / denom;
     message.natural_per_word = n / denom;
+
+    // Per-message tone using same scaling as weekly computeTone
+    const sNorm = clamp(s / 12, -1, 1);
+    const nNorm = clamp(n / 0.2, -1, 1);
+    message.tone = clamp((sNorm + nNorm) / 2, -1, 1);
   });
   return messages;
+}
+
+function clamp(x, lo, hi) {
+  if (!Number.isFinite(x)) return 0;
+  return Math.max(lo, Math.min(hi, x));
 }
 
 module.exports = { computeDerivedMetrics };

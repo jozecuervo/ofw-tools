@@ -20,6 +20,7 @@ function formatMessageMarkdown(message, index, total) {
     wordCount,
     sentiment,
     sentiment_natural,
+    tone,
     subject,
     body,
   } = message;
@@ -32,7 +33,7 @@ function formatMessageMarkdown(message, index, total) {
     `- To:`,
     toLines,
     `- Message **${index + 1}** of **${total}**`,
-    `- Word Count: **${wordCount}**, Sentiment: **${sentiment}**, ${sentiment_natural}`,
+    `- Word Count: **${wordCount}**, Sentiment: **${sentiment}**, Natural: **${sentiment_natural}**, Tone: **${tone}**`,
     '',
     body || '',
     '',

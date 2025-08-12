@@ -10,6 +10,7 @@ const defaultStats = {
   sentiment_per_word: 0,
   natural_per_word: 0,
   avgSentimentNatural: 0,
+  toneTotal: 0,
   averageReadTime: 0,
 };
 
@@ -47,6 +48,7 @@ function accumulateStats(messages) {
     totals[sender].sentiment_natural += message.sentiment_natural;
     if (Number.isFinite(message.sentiment_per_word)) totals[sender].sentiment_per_word += message.sentiment_per_word;
     if (Number.isFinite(message.natural_per_word)) totals[sender].natural_per_word += message.natural_per_word;
+    if (Number.isFinite(message.tone)) totals[sender].toneTotal += message.tone;
 
     stats[weekString][sender].messagesSent++;
     stats[weekString][sender].totalWords += message.wordCount;
@@ -54,6 +56,7 @@ function accumulateStats(messages) {
     stats[weekString][sender].sentiment_natural += message.sentiment_natural;
     if (Number.isFinite(message.sentiment_per_word)) stats[weekString][sender].sentiment_per_word += message.sentiment_per_word;
     if (Number.isFinite(message.natural_per_word)) stats[weekString][sender].natural_per_word += message.natural_per_word;
+    if (Number.isFinite(message.tone)) stats[weekString][sender].toneTotal += message.tone;
 
     for (const [recipient, firstViewed] of Object.entries(message.recipientReadTimes)) {
       if (firstViewed !== 'Never') {
@@ -113,20 +116,13 @@ function accumulateStats(messages) {
   return { totals, weekly: stats };
 }
 
-// Compute a normalized tone value between the two sentiment libraries.
-// Approach: clamp scaled values to [-1, 1], then average them equally.
+// Compute tone as weekly/total average of per-message tone (computed in metrics)
 function computeTone(personStats) {
   if (!personStats || typeof personStats !== 'object') return 0;
-  const s = Number(personStats.avgSentiment);
-  // Prefer averaged Natural score for apples-to-apples blending; fallback to summed if average not available.
-  const nAvg = (personStats.avgSentimentNatural !== undefined)
-    ? Number(personStats.avgSentimentNatural)
-    : Number(personStats.sentiment_natural);
-  const sNorm = clamp(s / 12, -1, 1);
-  // Boost natural's influence: typical range ~ -0.2..1.1 → scale by ~0.2
-  const nNorm = clamp(nAvg / 0.2, -1, 1);
-  const avg = (sNorm + nNorm) / 2;
-  return clamp(avg, -1, 1);
+  const sent = Number(personStats.messagesSent) || 0;
+  const toneTotal = Number(personStats.toneTotal) || 0;
+  if (sent <= 0) return 0;
+  return clamp(toneTotal / sent, -1, 1);
 }
 
 function clamp(x, lo, hi) {
