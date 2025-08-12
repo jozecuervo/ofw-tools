@@ -1,5 +1,6 @@
 const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('../utils/output/markdown');
-const { formatWeeklyCsv, formatWeeklyTop2Csv, computeTone } = require('../utils/output/csv');
+const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('../utils/output/csv');
+const { computeTone } = require('../utils/ofw/stats');
 
 describe('utils/output', () => {
   test('formatMessageMarkdown includes subject and body', () => {
@@ -34,7 +35,7 @@ describe('utils/output', () => {
 });
 
 describe('utils/output top2', () => {
-  test('formatWeeklyTop2Csv uses global top 2 senders and outputs weekly rows', () => {
+  test('formatWeeklyTop2Csv uses global top 2 senders and outputs weekly rows with week start/end', () => {
     const weekly = {
       'Week1': {
         Alice: { messagesSent: 3, messagesRead: 2, totalReadTime: 30, totalWords: 100, avgSentiment: 1.5, sentiment_natural: 0.2 },
@@ -48,7 +49,7 @@ describe('utils/output top2', () => {
     };
     const csv = formatWeeklyTop2Csv(weekly);
     const lines = csv.trim().split('\n');
-    expect(lines[0]).toMatch(/^Week,Sent (Alice|Bob),Sent (Alice|Bob),Total Words/);
+    expect(lines[0]).toMatch(/^Week,Week Start,Week End,Sent (Alice|Bob),Sent (Alice|Bob),Total Words/);
     expect(lines[0]).toMatch(/,Tone (Alice|Bob),Tone (Alice|Bob)$/);
     // Ensure both weeks are present
     expect(lines[1]).toMatch(/^"?Week1"?,/);

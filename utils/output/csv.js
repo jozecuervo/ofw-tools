@@ -67,18 +67,18 @@ function formatWeeklyTop2Csv(stats) {
   const nameA = first || '';
   const nameB = second || '';
 
-  // Header uses a human-friendly Week label (the existing weekly key)
-  let csvOutput = `Week,Sent ${nameA},Sent ${nameB},Total Words ${nameA},Total Words ${nameB},Read Time ${nameA},Read Time ${nameB},Sent ${nameA},Sent ${nameB},Sen. N ${nameA},Sen. N ${nameB},Tone ${nameA},Tone ${nameB}\n`;
+  // Header includes Week label and ISO start/end to match main CSV conventions
+  let csvOutput = `Week,Week Start,Week End,Sent ${nameA},Sent ${nameB},Total Words ${nameA},Total Words ${nameB},Read Time ${nameA},Read Time ${nameB},Sent ${nameA},Sent ${nameB},Sen. N ${nameA},Sen. N ${nameB},Tone ${nameA},Tone ${nameB}` + "\n";
 
   const weeks = Object.keys(stats);
   weeks.forEach(week => {
-    const w = stats[week] || {};
     const a = w[nameA] || {};
     const b = w[nameB] || {};
+    const { startISO, endISO } = parseWeekLabelToStartEnd(week);
     const toneA = (w[nameA] && Number.isFinite(Number(w[nameA].tone))) ? w[nameA].tone : 0;
     const toneB = (w[nameB] && Number.isFinite(Number(w[nameB].tone))) ? w[nameB].tone : 0;
     const row = [
-      week,
+      startISO ? `"${startISO}"` : '',
       safeInt(a.messagesSent),
       safeInt(b.messagesSent),
       safeInt(a.totalWords),
