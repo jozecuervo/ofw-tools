@@ -5,7 +5,11 @@ function formatWeeklyCsv(stats) {
     for (const [person, personStats] of Object.entries(weekStats)) {
       const wordCount = (personStats.totalWords !== undefined) ? personStats.totalWords : '';
       const tone = Number.isFinite(Number(personStats.tone)) ? Number(personStats.tone).toFixed(2) : '0.00';
-      csvOutput += `${startISO ? `"${startISO}"` : ''},${endISO ? `"${endISO}"` : ''},"${person}",${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)},${wordCount},${personStats.avgSentiment.toFixed(2)},${personStats.sentiment_natural.toFixed(2)},${tone}\n`;
+      const naturalAvg = (personStats.avgSentimentNatural !== undefined)
+        ? Number(personStats.avgSentimentNatural)
+        : Number(personStats.sentiment_natural);
+      const naturalAvgStr = Number.isFinite(naturalAvg) ? naturalAvg.toFixed(2) : '0.00';
+      csvOutput += `${startISO ? `"${startISO}"` : ''},${endISO ? `"${endISO}"` : ''},"${person}",${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)},${wordCount},${personStats.avgSentiment.toFixed(2)},${naturalAvgStr},${tone}\n`;
     }
   }
   return csvOutput;
@@ -69,8 +73,8 @@ function formatWeeklyTop2Csv(stats) {
   const initialA = nameA.charAt(0).toUpperCase();
   const initialB = nameB.charAt(0).toUpperCase();
 
-  // Header: only Week Start for date, drop human Week and Week End
-  let csvOutput = `Week Start,Sent ${initialA},Sent ${initialB},Total Words ${initialA},Total Words ${initialB},Read Time ${initialA},Read Time ${initialB},Sentiment ${initialA},Sentiment ${initialB},Sentiment Natural ${initialA},Sentiment Natural ${initialB},Tone ${initialA},Tone ${initialB}` + "\n";
+  // Header includes Week label
+  let csvOutput = `Week,Week Start,Week End,Sent ${nameA},Sent ${nameB},Total Words ${nameA},Total Words ${nameB},Read Time ${nameA},Read Time ${nameB},Sentiment ${nameA},Sentiment ${nameB},Sentiment Natural ${nameA},Sentiment Natural ${nameB},Tone ${nameA},Tone ${nameB}` + "\n";
 
   const weeks = Object.keys(stats);
   weeks.forEach(week => {
@@ -81,7 +85,9 @@ function formatWeeklyTop2Csv(stats) {
     const toneA = (w[nameA] && Number.isFinite(Number(w[nameA].tone))) ? w[nameA].tone : 0;
     const toneB = (w[nameB] && Number.isFinite(Number(w[nameB].tone))) ? w[nameB].tone : 0;
     const row = [
-      startISO ? `"${startISO}"` : '',
+      week || '',
+      startISO || '',
+      endISO || '',
       safeInt(a.messagesSent),
       safeInt(b.messagesSent),
       safeInt(a.totalWords),
@@ -90,8 +96,8 @@ function formatWeeklyTop2Csv(stats) {
       safeNum(b.averageReadTime),
       safeNum(a.avgSentiment),
       safeNum(b.avgSentiment),
-      safeNum(a.sentiment_natural),
-      safeNum(b.sentiment_natural),
+      safeNum(a.avgSentimentNatural !== undefined ? a.avgSentimentNatural : a.sentiment_natural),
+      safeNum(b.avgSentimentNatural !== undefined ? b.avgSentimentNatural : b.sentiment_natural),
       safeNum(toneA),
       safeNum(toneB),
     ];

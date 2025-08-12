@@ -49,7 +49,7 @@ describe('utils/output top2', () => {
     };
     const csv = formatWeeklyTop2Csv(weekly);
     const lines = csv.trim().split('\n');
-    expect(lines[0]).toMatch(/^Week,Week Start,Week End,Sent (Alice|Bob),Sent (Alice|Bob),Total Words/);
+    expect(lines[0]).toMatch(/^Week Start,Sent (Alice|Bob),Sent (Alice|Bob),Total Words/);
     expect(lines[0]).toMatch(/,Tone (Alice|Bob),Tone (Alice|Bob)$/);
     // Ensure both weeks are present
     expect(lines[1]).toMatch(/^"?Week1"?,/);

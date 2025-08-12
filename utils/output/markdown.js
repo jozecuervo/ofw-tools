@@ -47,7 +47,8 @@ function formatTotalsMarkdown(totals, options = {}) {
     const paddedAvgTime = (personTotals.averageReadTime).toFixed(1).toString().padStart(14);
     const wordCountDisplay = personTotals.messagesSent > 0 ? personTotals.totalWords.toString().padStart(6) : ' '.padStart(6);
     const paddedSentiment = personTotals.avgSentiment.toFixed(2).toString().padStart(14);
-    const paddedSentiment_natural = personTotals.sentiment_natural.toFixed(2).toString().padStart(14);
+    const naturalAvg = (personTotals.avgSentimentNatural !== undefined) ? personTotals.avgSentimentNatural : personTotals.sentiment_natural;
+    const paddedSentiment_natural = Number(naturalAvg).toFixed(2).toString().padStart(14);
     const row = `| ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedTotalTime} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} |`;
     out.push(row);
   }
@@ -80,7 +81,8 @@ function formatWeeklyMarkdown(stats, options = {}) {
       const paddedAvgTime = (personStats.averageReadTime).toFixed(1).toString().padStart(14);
       const wordCountDisplay = personStats.messagesSent > 0 ? personStats.totalWords.toString().padStart(6) : ' '.padStart(6);
       const paddedSentiment = personStats.avgSentiment.toFixed(2).toString().padStart(14);
-      const paddedSentiment_natural = personStats.sentiment_natural.toFixed(2).toString().padStart(14);
+      const naturalAvg = (personStats.avgSentimentNatural !== undefined) ? personStats.avgSentimentNatural : personStats.sentiment_natural;
+      const paddedSentiment_natural = Number(naturalAvg).toFixed(2).toString().padStart(14);
       const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} |`;
       out.push(row);
       previousWeek = week;
