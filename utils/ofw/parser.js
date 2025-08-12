@@ -1,8 +1,4 @@
-const Sentiment = require('sentiment');
-const sentiment = new Sentiment();
-
-const natural = require('natural');
-const analyzer = new natural.SentimentAnalyzer('English', natural.PorterStemmer, 'afinn');
+// Sentiment processing moved to `utils/ofw/metrics.js` to keep this parser pure.
 
 const { parseDate } = require('../date');
 
@@ -110,14 +106,9 @@ function parseMessage(messageBlock) {
     });
   message.body = bodyLines.join('\n').trim();
   message.wordCount = message.body ? message.body.split(/\s+/).filter(Boolean).length : 0;
-
-  if (message.body) {
-    message.sentiment_natural = analyzer.getSentiment(message.body.split(/\s+/));
-    message.sentiment = sentiment.analyze(message.body).score;
-  } else {
-    message.sentiment_natural = 0;
-    message.sentiment = 0;
-  }
+  // Defer sentiment computation to metrics stage; initialize with zeros for type stability.
+  message.sentiment_natural = 0;
+  message.sentiment = 0;
   if (!message.sender) message.sender = 'Unknown';
   if (!message.subject) message.subject = 'No subject';
   return message;

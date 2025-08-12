@@ -9,7 +9,8 @@
  * Pipeline
  * 1) parsePdfFile: read PDF → text
  * 2) processMessages: split text by "Message N of M" → parseMessage for each block
- * 3) writeJsonFile: persist parsed messages alongside the PDF basename
+ * 3) computeDerivedMetrics: compute word counts and sentiment per message
+ * 4) writeJsonFile: persist parsed messages
  * 4) writeMarkDownFile: write a per-message Markdown file (optional)
  * 5) compileAndOutputStats: compute per-week/person stats; write CSV (optional); print Markdown tables
  *
@@ -24,6 +25,7 @@ const { parsePdf } = require('./utils');
 const { writeFile, writeJson } = require('./utils');
 const { formatDate } = require('./utils');
 const { processMessages } = require('./utils/ofw/parser');
+const { computeDerivedMetrics } = require('./utils/ofw/metrics');
 const { accumulateStats } = require('./utils/ofw/stats');
 const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('./utils/output/markdown');
 const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('./utils/output/csv');
@@ -81,8 +83,10 @@ async function parsePdfFile(inputFilePath) {
     try {
         const pdfText = await parsePdf(inputFilePath);
         console.log('PDF text parsed');
-        const messages = processMessages(pdfText);
-        console.log(`Processed ${messages.length} messages`);
+        const parsed = processMessages(pdfText);
+        console.log(`Processed ${parsed.length} messages`);
+        const messages = computeDerivedMetrics(parsed);
+        console.log('Computed derived metrics');
         const directory = path.dirname(inputFilePath);
         const fileNameWithoutExt = path.basename(inputFilePath, path.extname(inputFilePath));
         return { messages, directory, fileNameWithoutExt };
