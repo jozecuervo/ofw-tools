@@ -27,17 +27,16 @@ function formatMessageMarkdown(message, index, total) {
     .map(([recipient, firstViewed]) => `   - ${recipient}: ${formatDate(firstViewed)}`)
     .join('\n');
   return [
-    '',
-    '-----------------------------------------------------',
-    `## Message ${index + 1} of ${total}`,
-    `- Sent: ${formatDate(sentDate)}`,
-    `- From: ${sender}`,
+    `## ${subject}`,
+    `- From: **${sender}** ${formatDate(sentDate)}`,
     `- To:`,
     toLines,
-    `- Word Count: ${wordCount}, Sentiment: ${sentiment}, ${sentiment_natural}`,
-    `- Subject: ${subject}`,
+    `- Message **${index + 1}** of **${total}**`,
+    `- Word Count: **${wordCount}**, Sentiment: **${sentiment}**, ${sentiment_natural}`,
     '',
-    body || ''
+    body || '',
+    '',
+    ''
   ].join('\n');
 }
 
