@@ -166,14 +166,15 @@ function outputCSV(stats, filePath) {
     writeFile(filePath, csvOutput);
 }
 
-function outputTop2CSV(stats, filePath) {
-    if (!filePath) {
-        console.log('Top2 CSV output disabled.');
-        return;
-    }
-    const csvOutput = formatWeeklyTop2Csv(stats);
-    console.log(`Writing Top2 CSV to ${filePath}`);
-    writeFile(filePath, csvOutput);
+// Generic CSV writer
+function outputCsvWith(formatter, data, filePath, label = 'CSV') {
+  if (!filePath) {
+    console.log(`${label} output disabled.`);
+    return;
+  }
+  const csvOutput = formatter(data);
+  console.log(`Writing ${label} to ${filePath}`);
+  writeFile(filePath, csvOutput);
 }
 
 /**
@@ -186,8 +187,8 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
     const outDir = path.resolve(process.cwd(), 'output');
     const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.csv`) : null;
     const top2CsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.top2.csv`) : null;
-    outputCSV(weekly, csvFilePath);
-    outputTop2CSV(weekly, top2CsvPath);
+    outputCsvWith(formatWeeklyCsv, weekly, csvFilePath, 'CSV');
+    outputCsvWith(formatWeeklyTop2Csv, weekly, top2CsvPath, 'Top2 CSV');
     outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns });
 }
 
