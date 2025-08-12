@@ -22,12 +22,12 @@
 const path = require('path');
 
 const { parsePdf } = require('./utils');
-const { writeFile, writeJson } = require('./utils');
 const { processMessages } = require('./utils/ofw/parser');
 const { computeDerivedMetrics } = require('./utils/ofw/metrics');
 const { accumulateStats } = require('./utils/ofw/stats');
 const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('./utils/output/markdown');
 const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('./utils/output/csv');
+const { writeFile, writeJson } = require('./utils');
 
 /**
  * Parse a single OFW message block into a message object.
@@ -125,8 +125,9 @@ function writeMarkDownFile(data) {
             const { messages, directory, fileNameWithoutExt } = data;
             let markdownContent = '';
             messages.forEach((message, index) => {
+                if (message && message._nonMessage) return;
                 const messageContent = formatMessageMarkdown(message, index, messages.length);
-                markdownContent += messageContent;
+                markdownContent += messageContent + '\n';
             });
             const outDir = path.resolve(process.cwd(), 'output');
             const markdownFilePath = path.join(outDir, `${fileNameWithoutExt}.md`);

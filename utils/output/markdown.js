@@ -23,18 +23,22 @@ function formatMessageMarkdown(message, index, total) {
     subject,
     body,
   } = message;
-  return `
------------------------------------------------------
-## Message ${index + 1} of ${total}
-- Sent: ${formatDate(sentDate)}
-- From: ${sender}
-- To:
-${Object.entries(recipientReadTimes).map(([recipient, firstViewed]) => `   - ${recipient}: ${formatDate(firstViewed)}`).join('\n')}
-- Word Count: ${wordCount}, Sentiment: ${sentiment}, ${sentiment_natural}
-- Subject: ${subject}
-
-${body}
-`;
+  const toLines = Object.entries(recipientReadTimes || {})
+    .map(([recipient, firstViewed]) => `   - ${recipient}: ${formatDate(firstViewed)}`)
+    .join('\n');
+  return [
+    '',
+    '-----------------------------------------------------',
+    `## Message ${index + 1} of ${total}`,
+    `- Sent: ${formatDate(sentDate)}`,
+    `- From: ${sender}`,
+    `- To:`,
+    toLines,
+    `- Word Count: ${wordCount}, Sentiment: ${sentiment}, ${sentiment_natural}`,
+    `- Subject: ${subject}`,
+    '',
+    body || ''
+  ].join('\n');
 }
 
 function formatTotalsMarkdown(totals, options = {}) {
