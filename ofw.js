@@ -26,7 +26,7 @@ const { formatDate } = require('./utils');
 const { processMessages } = require('./utils/ofw/parser');
 const { accumulateStats } = require('./utils/ofw/stats');
 const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('./utils/output/markdown');
-const { formatWeeklyCsv } = require('./utils/output/csv');
+const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('./utils/output/csv');
 
 /**
  * Parse a single OFW message block into a message object.
@@ -188,6 +188,16 @@ function outputCSV(stats, filePath) {
     writeFile(filePath, csvOutput);
 }
 
+function outputTop2CSV(stats, filePath) {
+    if (!filePath) {
+        console.log('Top2 CSV output disabled.');
+        return;
+    }
+    const csvOutput = formatWeeklyTop2Csv(stats);
+    console.log(`Writing Top2 CSV to ${filePath}`);
+    writeFile(filePath, csvOutput);
+}
+
 /**
  * Compile weekly statistics and render console/CSV outputs.
  * @param {{ messages:Array<object>, directory:string, fileNameWithoutExt:string }} bundle
@@ -197,7 +207,9 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
     const { totals, weekly } = accumulateStats(messages);
     const outDir = path.resolve(process.cwd(), 'output');
     const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.csv`) : null;
+    const top2CsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.top2.csv`) : null;
     outputCSV(weekly, csvFilePath);
+    outputTop2CSV(weekly, top2CsvPath);
     outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns });
 }
 

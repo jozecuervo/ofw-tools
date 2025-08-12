@@ -60,4 +60,71 @@ function toISODate(d) {
 
 module.exports = { formatWeeklyCsv };
 
+// Build a second CSV focused on the global top 2 senders across all weeks
+function formatWeeklyTop2Csv(stats) {
+  const [first, second] = getGlobalTopNSenders(stats, 2);
+  const nameA = first || '';
+  const nameB = second || '';
+
+  // Header uses a human-friendly Week label (the existing weekly key)
+  let csvOutput = `Week,Sent ${nameA},Sent ${nameB},Total Words ${nameA},Total Words ${nameB},Read Time ${nameA},Read Time ${nameB},Sen. ${nameA},Sen. ${nameB},Sen. N ${nameA},Sen. N ${nameB}\n`;
+
+  const weeks = Object.keys(stats);
+  weeks.forEach(week => {
+    const w = stats[week] || {};
+    const a = w[nameA] || {};
+    const b = w[nameB] || {};
+    const row = [
+      week,
+      safeInt(a.messagesSent),
+      safeInt(b.messagesSent),
+      safeInt(a.totalWords),
+      safeInt(b.totalWords),
+      safeNum(a.averageReadTime),
+      safeNum(b.averageReadTime),
+      safeNum(a.avgSentiment),
+      safeNum(b.avgSentiment),
+      safeNum(a.sentiment_natural),
+      safeNum(b.sentiment_natural),
+    ];
+    csvOutput += row.map(csvCell).join(',') + '\n';
+  });
+
+  return csvOutput;
+}
+
+function getGlobalTopNSenders(stats, n) {
+  const totals = {};
+  for (const week of Object.keys(stats)) {
+    const w = stats[week];
+    for (const person of Object.keys(w)) {
+      const s = w[person];
+      const sent = typeof s.messagesSent === 'number' ? s.messagesSent : 0;
+      if (sent > 0) totals[person] = (totals[person] || 0) + sent;
+    }
+  }
+  return Object.entries(totals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([name]) => name);
+}
+
+function csvCell(val) {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'string') return `"${val}"`;
+  return String(val);
+}
+
+function safeInt(val) {
+  const n = Number(val);
+  return Number.isFinite(n) ? Math.round(n) : 0;
+}
+
+function safeNum(val) {
+  const n = Number(val);
+  return Number.isFinite(n) ? Number(n.toFixed(2)) : 0;
+}
+
+module.exports.formatWeeklyTop2Csv = formatWeeklyTop2Csv;
+
 

@@ -1,5 +1,5 @@
 const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('../utils/output/markdown');
-const { formatWeeklyCsv } = require('../utils/output/csv');
+const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('../utils/output/csv');
 
 describe('utils/output', () => {
   test('formatMessageMarkdown includes subject and body', () => {
@@ -29,6 +29,28 @@ describe('utils/output', () => {
     // Expect ISO date columns present
     expect(csv).toMatch(/"2025-01-01"/);
     expect(csv).toMatch(/"2025-01-07"/);
+  });
+});
+
+describe('utils/output top2', () => {
+  test('formatWeeklyTop2Csv uses global top 2 senders and outputs weekly rows', () => {
+    const weekly = {
+      'Week1': {
+        Alice: { messagesSent: 3, messagesRead: 2, totalReadTime: 30, totalWords: 100, avgSentiment: 1.5, sentiment_natural: 0.2 },
+        Bob: { messagesSent: 5, messagesRead: 4, totalReadTime: 40, totalWords: 200, avgSentiment: 0.5, sentiment_natural: 0.1 },
+        Carol: { messagesSent: 1, messagesRead: 1, totalReadTime: 10, totalWords: 50, avgSentiment: 0.1, sentiment_natural: -0.1 },
+      },
+      'Week2': {
+        Alice: { messagesSent: 7, messagesRead: 3, totalReadTime: 20, totalWords: 150, avgSentiment: 2.5, sentiment_natural: 0.4 },
+        Bob: { messagesSent: 2, messagesRead: 1, totalReadTime: 15, totalWords: 80, avgSentiment: -0.5, sentiment_natural: -0.2 },
+      },
+    };
+    const csv = formatWeeklyTop2Csv(weekly);
+    const lines = csv.trim().split('\n');
+    expect(lines[0]).toMatch(/^Week,Sent (Alice|Bob),Sent (Alice|Bob),Total Words/);
+    // Ensure both weeks are present
+    expect(lines[1]).toMatch(/^"?Week1"?,/);
+    expect(lines[2]).toMatch(/^"?Week2"?,/);
   });
 });
 
