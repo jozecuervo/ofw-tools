@@ -1,10 +1,11 @@
 function formatWeeklyCsv(stats) {
-  let csvOutput = 'Week Start,Week End,Name,Messages Sent,Messages Read,Average Read Time (minutes),Total Words, Sentiment, Sentiment_natural\n';
+  let csvOutput = 'Week Start,Week End,Name,Messages Sent,Messages Read,Average Read Time (minutes),Total Words, Sentiment, Sentiment_natural, Tone\n';
   for (const [week, weekStats] of Object.entries(stats)) {
     const { startISO, endISO } = parseWeekLabelToStartEnd(week);
     for (const [person, personStats] of Object.entries(weekStats)) {
       const wordCount = (personStats.totalWords !== undefined) ? personStats.totalWords : '';
-      csvOutput += `${startISO ? `"${startISO}"` : ''},${endISO ? `"${endISO}"` : ''},"${person}",${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)},${wordCount},${personStats.avgSentiment.toFixed(2)},${personStats.sentiment_natural.toFixed(2)}\n`;
+      const tone = Number.isFinite(Number(personStats.tone)) ? Number(personStats.tone).toFixed(2) : '0.00';
+      csvOutput += `${startISO ? `"${startISO}"` : ''},${endISO ? `"${endISO}"` : ''},"${person}",${personStats.messagesSent},${personStats.messagesRead},${personStats.averageReadTime.toFixed(2)},${wordCount},${personStats.avgSentiment.toFixed(2)},${personStats.sentiment_natural.toFixed(2)},${tone}\n`;
     }
   }
   return csvOutput;
@@ -67,13 +68,15 @@ function formatWeeklyTop2Csv(stats) {
   const nameB = second || '';
 
   // Header uses a human-friendly Week label (the existing weekly key)
-  let csvOutput = `Week,Sent ${nameA},Sent ${nameB},Total Words ${nameA},Total Words ${nameB},Read Time ${nameA},Read Time ${nameB},Sen. ${nameA},Sen. ${nameB},Sen. N ${nameA},Sen. N ${nameB}\n`;
+  let csvOutput = `Week,Sent ${nameA},Sent ${nameB},Total Words ${nameA},Total Words ${nameB},Read Time ${nameA},Read Time ${nameB},Sent ${nameA},Sent ${nameB},Sen. N ${nameA},Sen. N ${nameB},Tone ${nameA},Tone ${nameB}\n`;
 
   const weeks = Object.keys(stats);
   weeks.forEach(week => {
     const w = stats[week] || {};
     const a = w[nameA] || {};
     const b = w[nameB] || {};
+    const toneA = (w[nameA] && Number.isFinite(Number(w[nameA].tone))) ? w[nameA].tone : 0;
+    const toneB = (w[nameB] && Number.isFinite(Number(w[nameB].tone))) ? w[nameB].tone : 0;
     const row = [
       week,
       safeInt(a.messagesSent),
@@ -86,6 +89,8 @@ function formatWeeklyTop2Csv(stats) {
       safeNum(b.avgSentiment),
       safeNum(a.sentiment_natural),
       safeNum(b.sentiment_natural),
+      safeNum(toneA),
+      safeNum(toneB),
     ];
     csvOutput += row.map(csvCell).join(',') + '\n';
   });
@@ -126,5 +131,3 @@ function safeNum(val) {
 }
 
 module.exports.formatWeeklyTop2Csv = formatWeeklyTop2Csv;
-
-

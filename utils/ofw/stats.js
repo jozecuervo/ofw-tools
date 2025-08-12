@@ -90,6 +90,7 @@ function accumulateStats(messages) {
     totals[person].avgSentiment = total.messagesSent === 0 ? 0 : total.sentiment / total.messagesSent;
     if (!Number.isFinite(totals[person].avgSentiment)) totals[person].avgSentiment = 0;
     if (!Number.isFinite(totals[person].averageReadTime)) totals[person].averageReadTime = 0;
+    totals[person].tone = computeTone(totals[person]);
   });
 
   for (const week in stats) {
@@ -98,12 +99,30 @@ function accumulateStats(messages) {
       const personStats = stats[week][person];
       personStats.averageReadTime = personStats.messagesRead === 0 ? 0 : personStats.totalReadTime / personStats.messagesRead;
       personStats.avgSentiment = personStats.messagesSent > 0 ? (personStats.sentiment / personStats.messagesSent) : 0;
+      personStats.tone = computeTone(personStats);
     }
   }
 
   return { totals, weekly: stats };
 }
 
-module.exports = { accumulateStats };
+// Compute a normalized tone value between the two sentiment libraries.
+// Approach: clamp scaled values to [-1, 1], then average them equally.
+function computeTone(personStats) {
+  if (!personStats || typeof personStats !== 'object') return 0;
+  const s = Number(personStats.avgSentiment);
+  const n = Number(personStats.sentiment_natural);
+  const sNorm = clamp(s / 10, -1, 1);
+  const nNorm = clamp(n / 5, -1, 1);
+  const avg = (sNorm + nNorm) / 2;
+  return clamp(avg, -1, 1);
+}
+
+function clamp(x, lo, hi) {
+  if (!Number.isFinite(x)) return 0;
+  return Math.max(lo, Math.min(hi, x));
+}
+
+module.exports = { accumulateStats, computeTone };
 
 

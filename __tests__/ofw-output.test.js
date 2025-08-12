@@ -1,5 +1,5 @@
 const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('../utils/output/markdown');
-const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('../utils/output/csv');
+const { formatWeeklyCsv, formatWeeklyTop2Csv, computeTone } = require('../utils/output/csv');
 
 describe('utils/output', () => {
   test('formatMessageMarkdown includes subject and body', () => {
@@ -26,6 +26,7 @@ describe('utils/output', () => {
     });
     const header = csv.split('\n')[0];
     expect(header).toMatch(/Week Start,Week End,Name,Messages Sent/);
+    expect(header).toMatch(/, Tone$/);
     // Expect ISO date columns present
     expect(csv).toMatch(/"2025-01-01"/);
     expect(csv).toMatch(/"2025-01-07"/);
@@ -48,9 +49,19 @@ describe('utils/output top2', () => {
     const csv = formatWeeklyTop2Csv(weekly);
     const lines = csv.trim().split('\n');
     expect(lines[0]).toMatch(/^Week,Sent (Alice|Bob),Sent (Alice|Bob),Total Words/);
+    expect(lines[0]).toMatch(/,Tone (Alice|Bob),Tone (Alice|Bob)$/);
     // Ensure both weeks are present
     expect(lines[1]).toMatch(/^"?Week1"?,/);
     expect(lines[2]).toMatch(/^"?Week2"?,/);
+  });
+
+  test('computeTone blends libraries into [-1,1] range', () => {
+    const t1 = computeTone({ avgSentiment: 10, sentiment_natural: 2 });
+    expect(t1).toBeGreaterThan(0);
+    const t2 = computeTone({ avgSentiment: -10, sentiment_natural: -2 });
+    expect(t2).toBeLessThan(0);
+    const t3 = computeTone(null);
+    expect(t3).toBe(0);
   });
 });
 

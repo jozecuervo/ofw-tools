@@ -5,7 +5,7 @@ applyTo: "**/*"
 
 ## Legal Review Scope
 
-- California family law awareness (San Luis Obispo context). General info and risk spotting only; not legal advice.
+- California's family law awareness (San Luis Obispo context). General info and risk spotting only; not legal advice.
 - Detect when to “run it past legal.” Respect DVRO/standing orders.
 - Some California Family law statutes are available in /docs/
 
