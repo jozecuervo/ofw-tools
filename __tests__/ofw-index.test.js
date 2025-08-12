@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 
 // Import internals from index.js
 const { __processMessages } = require('../index.js');
@@ -21,8 +22,10 @@ async function getPdfText(pdfRelPath) {
 
 describe('OFW PDF parser boundaries', () => {
   const samplePdf = 'source_files/OFW_Messages_Report_2025-08-03_21-06-31.pdf';
+  const sampleAbs = path.resolve(__dirname, '..', samplePdf);
+  const itMaybe = fs.existsSync(sampleAbs) ? test : test.skip;
 
-  test('preserves full message count by strict boundary lines', async () => {
+  itMaybe('preserves full message count by strict boundary lines', async () => {
     const text = await getPdfText(samplePdf);
 
     // Count true boundary lines (standalone)

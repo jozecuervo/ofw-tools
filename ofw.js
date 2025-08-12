@@ -26,7 +26,7 @@ const { formatDate } = require('./utils');
 const { processMessages } = require('./utils/ofw/parser');
 const { accumulateStats } = require('./utils/ofw/stats');
 const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('./utils/output/markdown');
-const { formatWeeklyCsv } = require('./utils/output/csv');
+const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('./utils/output/csv');
 
 /**
  * Parse a single OFW message block into a message object.
@@ -101,7 +101,8 @@ function writeJsonFile(data) {
     return new Promise((resolve, reject) => {
         try {
             const { messages, directory, fileNameWithoutExt } = data;
-            const jsonFilePath = path.join(directory, `${fileNameWithoutExt}.json`);
+            const outDir = path.resolve(process.cwd(), 'output');
+            const jsonFilePath = path.join(outDir, `${fileNameWithoutExt}.json`);
             console.log(`Writing JSON to ${jsonFilePath}`);
             writeJson(jsonFilePath, messages);
             resolve(data);  // Pass the data object along for further processing
@@ -149,7 +150,8 @@ function writeMarkDownFile(data) {
                 const messageContent = messageTemplate(message, index, messages.length);
                 markdownContent += messageContent;
             });
-            const markdownFilePath = path.join(directory, `${fileNameWithoutExt}.md`);
+            const outDir = path.resolve(process.cwd(), 'output');
+            const markdownFilePath = path.join(outDir, `${fileNameWithoutExt}.md`);
             console.log(`Writing all messages to ${markdownFilePath}`);
             writeFile(markdownFilePath, markdownContent);
             resolve(data);  // Pass the data object along for further processing
@@ -186,6 +188,16 @@ function outputCSV(stats, filePath) {
     writeFile(filePath, csvOutput);
 }
 
+function outputTop2CSV(stats, filePath) {
+    if (!filePath) {
+        console.log('Top2 CSV output disabled.');
+        return;
+    }
+    const csvOutput = formatWeeklyTop2Csv(stats);
+    console.log(`Writing Top2 CSV to ${filePath}`);
+    writeFile(filePath, csvOutput);
+}
+
 /**
  * Compile weekly statistics and render console/CSV outputs.
  * @param {{ messages:Array<object>, directory:string, fileNameWithoutExt:string }} bundle
@@ -193,8 +205,11 @@ function outputCSV(stats, filePath) {
  */
 function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, options = { writeCsv: true, excludePatterns: [] }) {
     const { totals, weekly } = accumulateStats(messages);
-    const csvFilePath = options.writeCsv && directory && fileNameWithoutExt ? path.join(directory, `${fileNameWithoutExt}.csv`) : null;
+    const outDir = path.resolve(process.cwd(), 'output');
+    const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.csv`) : null;
+    const top2CsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.top2.csv`) : null;
     outputCSV(weekly, csvFilePath);
+    outputTop2CSV(weekly, top2CsvPath);
     outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns });
 }
 
