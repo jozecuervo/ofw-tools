@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.8.0] - 2025-08-11
+### Added
+- `formatWeeklyTop2Csv` function to output CSV for the top 2 senders across all weeks.
+- `computeTone` function to compute a normalized tone value between the two sentiment libraries.
+- `formatWeeklyCsv` function to output all CSV data across all weeks.
+- `formatWeeklyTop2Csv` function to output CSV for the top 2 senders across all weeks.
+
 ## [1.7.0] - 2025-08-10
 
 ### Changed
