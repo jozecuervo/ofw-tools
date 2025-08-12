@@ -24,8 +24,11 @@ describe('utils/output', () => {
         A: { messagesSent: 1, messagesRead: 1, averageReadTime: 10, totalWords: 5, avgSentiment: 0.5, sentiment_natural: 0.2 },
       }
     });
-    expect(csv.split('\n')[0]).toMatch(/Week,Name,Messages Sent/);
-    expect(csv).toMatch(/"2025-01-01/);
+    const header = csv.split('\n')[0];
+    expect(header).toMatch(/Week Start,Week End,Name,Messages Sent/);
+    // Expect ISO date columns present
+    expect(csv).toMatch(/"2025-01-01"/);
+    expect(csv).toMatch(/"2025-01-07"/);
   });
 });
 
