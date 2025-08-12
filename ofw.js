@@ -101,7 +101,8 @@ function writeJsonFile(data) {
     return new Promise((resolve, reject) => {
         try {
             const { messages, directory, fileNameWithoutExt } = data;
-            const jsonFilePath = path.join(directory, `${fileNameWithoutExt}.json`);
+            const outDir = path.resolve(process.cwd(), 'output');
+            const jsonFilePath = path.join(outDir, `${fileNameWithoutExt}.json`);
             console.log(`Writing JSON to ${jsonFilePath}`);
             writeJson(jsonFilePath, messages);
             resolve(data);  // Pass the data object along for further processing
@@ -149,7 +150,8 @@ function writeMarkDownFile(data) {
                 const messageContent = messageTemplate(message, index, messages.length);
                 markdownContent += messageContent;
             });
-            const markdownFilePath = path.join(directory, `${fileNameWithoutExt}.md`);
+            const outDir = path.resolve(process.cwd(), 'output');
+            const markdownFilePath = path.join(outDir, `${fileNameWithoutExt}.md`);
             console.log(`Writing all messages to ${markdownFilePath}`);
             writeFile(markdownFilePath, markdownContent);
             resolve(data);  // Pass the data object along for further processing
@@ -193,7 +195,8 @@ function outputCSV(stats, filePath) {
  */
 function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, options = { writeCsv: true, excludePatterns: [] }) {
     const { totals, weekly } = accumulateStats(messages);
-    const csvFilePath = options.writeCsv && directory && fileNameWithoutExt ? path.join(directory, `${fileNameWithoutExt}.csv`) : null;
+    const outDir = path.resolve(process.cwd(), 'output');
+    const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.csv`) : null;
     outputCSV(weekly, csvFilePath);
     outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns });
 }
