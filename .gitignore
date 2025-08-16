@@ -5,3 +5,4 @@ node_modules
 # Temporary AI-generated prompt artifacts
 prompts/temp-*
 source_files
+*.log

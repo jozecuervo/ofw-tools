@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [Unreleased]
+## [1.11.0] - 2025-08-15
+
+PR: [#19](https://github.com/jozecuervo/ofw-tools/pull/19)
 
 ### Added
 - Optional Ollama-based LLM sentiment post-processing for OFW analysis:
