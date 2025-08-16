@@ -1,9 +1,5 @@
 ## OFW Tools: Divorce and Communication Analysis Toolkit
 
-### ⚠️ IMPORTANT LEGAL DISCLAIMER
-
-**This toolkit is for educational and calculation purposes only and does not constitute legal advice.** Property division, family law issues, and communication analysis involve complex legal and factual determinations that vary by jurisdiction and individual circumstances. Always consult with a qualified family law attorney before making decisions based on these calculations or analysis. The tools do not account for many factors that may affect legal outcomes, including transmutations, agreements, refinances, improvements, or other legal doctrines.
-
 ### Overview
 
 Local-first Node.js CLIs that streamline common family-law workflows. These tools help you quickly analyze communications, generate calendars, compute property/equity figures, and now parse paychecks — all on your machine for privacy and speed. Outputs favor simple formats (CSV/Markdown/JSON) that drop easily into exhibits or spreadsheets.
@@ -29,6 +25,9 @@ Design principles:
 ### Quick Start
 
 - **Requirements**: Node.js (use your local `nvm` setup)
+  - Optional (for LLM sentiment post-processing): Ollama installed and running locally
+    - Pull model once: `ollama pull llama3.1`
+    - Run server: `ollama serve`
 - **Install**:
   ```bash
   cd ~/projects/ofw-tools
@@ -41,6 +40,7 @@ Design principles:
 Pass arguments after `--`.
 
 - Analyze OFW PDF: `npm run ofw:analyze -- /absolute/path/to/OFW_Messages_Report.pdf`
+- Analyze OFW PDF + LLM sentiment (Ollama): `npm run ofw:analyze-ollama -- /absolute/path/to/OFW_Messages_Report.pdf`
 - Rapid-fire clusters from JSON: `npm run ofw:clusters -- /absolute/path/to/OFW_Messages_Report.json`
 - Visitation calendar (YYYY MM): `npm run visitation -- 2024 4`
 - Fifth-week counter (built-in examples): `npm run nth-week`
@@ -72,10 +72,48 @@ Pass arguments after `--`.
   - `--no-markdown`: Skip writing per-message Markdown file
   - `--no-csv`: Skip writing weekly CSV
   - `--exclude <csv>`: Hide names containing any of the given substrings (case-insensitive) in printed tables
+  - `--ollama`: After JSON is written, perform LLM-based sentiment post-processing (requires local Ollama)
+  - `--ollama-max <n>`: Limit how many messages are sent to the LLM (default: 6)
 - **Display**:
   - “To:” pseudo-rows (recipient read-time buckets) are hidden in tables but still used for read-time stats.
   - Avg sentiment prints 0.00 when no messages were sent for that row/week.
   - Page banners and footers are excluded from message bodies.
+
+#### Ollama LLM Sentiment Post-Processing (Optional)
+
+- **Purpose**: Enhance sentiment with thread context and detect high-conflict/deceptive language indicators.
+- **Requirements**: Local Ollama with model `llama3.1` downloaded and server running.
+  ```bash
+  ollama pull llama3.1
+  ollama serve
+  ```
+- **Run**:
+  ```bash
+  # Default cap (6 messages sent to LLM)
+  npm run ofw:analyze-ollama -- /absolute/path/to/OFW_Messages_Report.pdf
+
+  # Override cap
+  node ofw.js /absolute/path/to/OFW_Messages_Report.pdf --ollama --ollama-max 24
+  ```
+- **Outputs** (written to `./output/` alongside the original JSON):
+  - `<report> - LLM processed.json` — same messages with an added `sentiment_ollama` field per message
+  - `<report> - summary.md` — per-thread list of messages and detected indicators
+- **`sentiment_ollama` schema** (compact JSON):
+  ```json
+  {
+    "sentiment": "positive|neutral|negative|mixed",
+    "conflict_level": "low|medium|high",
+    "deception_risk": "low|medium|high",
+    "flags": [
+      "insult","threat","gaslighting","darvo","blame-shift","minimization",
+      "legal-threat","coercion","manipulation","profanity","boundary-violation",
+      "inconsistency","false-allegation","exaggerated-absolutes"
+    ],
+    "reason": "Short justification"
+  }
+  ```
+  If the model returns non-JSON, the tool attempts to extract JSON; otherwise it stores a minimal object with a `raw` field.
+- **Bias testing**: The prompt includes baseline heuristic scores (`sentiment`, `sentiment_natural`, `tone`, and per‑word variants) for the current and prior context messages. This enables observing any systematic drift/bias when the model sees these priors versus when it does not (toggle by editing `ollama-sentiment.js`).
 
 ### 2) Rapid-Fire Message Clusters (`message-volume.js`)
 - **Purpose**: From the JSON produced by the OFW PDF Analyzer, find clusters of back-to-back messages within a time threshold (default 30 minutes) for a given sender.
@@ -391,3 +429,8 @@ You can also use these prompts to guide code generation, reviews, and testing ta
 ### Licensing
 
 Prompts are governed by `PROMPTS_LICENSE.md` and may differ from the code license.
+
+
+### ⚠️ IMPORTANT LEGAL DISCLAIMER
+
+**This toolkit is for educational and calculation purposes only and does not constitute legal advice.** Property division, family law issues, and communication analysis involve complex legal and factual determinations that vary by jurisdiction and individual circumstances. Always consult with a qualified family law attorney before making decisions based on these calculations or analysis. The tools do not account for many factors that may affect legal outcomes, including transmutations, agreements, refinances, improvements, or other legal doctrines.

@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.11.0] - 2025-08-15
+
+PR: [#19](https://github.com/jozecuervo/ofw-tools/pull/19)
+
+### Added
+- Optional Ollama-based LLM sentiment post-processing for OFW analysis:
+  - New flag `--ollama` on `ofw.js` to re-process the generated JSON with a local LLM
+  - New module `ollama-sentiment.js` implementing context-aware sentiment with limited thread context (default 3 prior messages)
+  - Outputs written alongside the original JSON in `./output/`:
+    - `<report> - LLM processed.json` (adds `sentiment_ollama` per message)
+    - `<report> - summary.md` (thread summaries with per-message sentiments and overall counts)
+- NPM script: `ofw:analyze-ollama` → `node ofw.js --ollama`
+
+### Changed
+- CLI help updated to document `--ollama`
+- CLI argument parsing made order-agnostic for input file (first non-flag token)
+ - Prompt tuned for high-conflict and deception detection; JSON output schema captured when available
+
+### Dependencies
+- Added `ollama`, `fs-extra`, and `winston`
+
+### Notes
+- Requires a local Ollama server and model: `ollama pull llama3.1` and `ollama serve`
+- CommonJS import uses the ESM default export: `const { default: ollama } = require('ollama')`
+
 ## [1.10.0] - 2025-08-15
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "ofw-tools",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "This repository contains a set of small, focused tools that help analyze communications, plan visitation schedules, and perform basic family-law-related calculations (Moore/Marsden, apportionment). These are optimized for quick, local use as you prepare materials for court.",
   "main": "index.js",
   "scripts": {
@@ -8,6 +8,7 @@
     "test": "jest",
     "prompts:validate": "node scripts/validate-prompts.js",
     "ofw:analyze": "node ofw.js",
+    "ofw:analyze-ollama": "node ofw.js --ollama",
     "ofw:clusters": "node message-volume.js",
     "visitation": "node visitation-cal.js",
     "nth-week": "node nth-week.js",
@@ -24,10 +25,13 @@
   "author": "",
   "license": "CC0-1.0",
   "dependencies": {
+    "fs-extra": "^11.2.0",
     "natural": "^6.8.0",
+    "ollama": "^0.5.8",
     "pdf-parse": "^1.1.1",
     "polarity": "^4.0.1",
-    "sentiment": "^5.0.2"
+    "sentiment": "^5.0.2",
+    "winston": "^3.14.2"
   },
   "devDependencies": {
     "jest": "^29.7.0"

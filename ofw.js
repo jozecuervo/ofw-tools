@@ -15,9 +15,11 @@
  * 5) compileAndOutputStats: compute per-week/person stats; write CSV (optional); print Markdown tables
  *
  * CLI
- * - node index.js <path-to-ofw-pdf> [--no-markdown] [--no-csv]
+ * - node ofw.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--ollama] [--ollama-max <n>] [--exclude <csv>]
  *   --no-markdown: skip writing per-message Markdown file
  *   --no-csv: skip writing weekly CSV summary
+ *   --ollama: run Ollama-based LLM sentiment post-processing on the generated JSON
+ *   --ollama-max <n>: limit Ollama-processed messages (default 6)
  */
 const path = require('path');
 
@@ -220,7 +222,7 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
 
 
 function printHelp() {
-    console.log(`\nUsage: node ofw.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--exclude <csv>]\n\nOptions:\n  --no-markdown           Skip writing the per-message Markdown file\n  --no-csv                Skip writing the weekly CSV summary\n  --exclude <csv>         Comma-separated substrings to hide in printed tables (case-insensitive)\n  -h, --help              Show this help\n`);
+    console.log(`\nUsage: node ofw.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--ollama] [--ollama-max <n>] [--exclude <csv>]\n\nOptions:\n  --no-markdown           Skip writing the per-message Markdown file\n  --no-csv                Skip writing the weekly CSV summary\n  --ollama                Run Ollama-based sentiment analysis on the generated JSON (requires local Ollama)\n  --ollama-max <n>        Limit how many messages are sent to Ollama (default: 6)\n  --exclude <csv>         Comma-separated substrings to hide in printed tables (case-insensitive)\n  -h, --help              Show this help\n`);
 }
 
 function runCli(rawArgs) {
@@ -233,12 +235,34 @@ function runCli(rawArgs) {
         return;
     }
 
-    const INPUT_FILE_PATH = rawArgs[0];
+    // Accept args in any order; pick the first non-flag token as input path
+    const nonFlagIdx = rawArgs.findIndex(a => !a.startsWith('-'));
+    if (nonFlagIdx === -1) {
+        printHelp();
+        return;
+    }
+    const INPUT_FILE_PATH = rawArgs[nonFlagIdx];
     const flags = {
         writeMarkdown: !rawArgs.includes('--no-markdown'),
         writeCsv: !rawArgs.includes('--no-csv'),
         excludePatterns: [],
     };
+    const enableOllama = rawArgs.includes('--ollama');
+    // Parse --ollama-max <n> or --ollama-max=<n>
+    let ollamaMax = 6;
+    const maxIdx = rawArgs.indexOf('--ollama-max');
+    if (maxIdx !== -1) {
+        const maybe = rawArgs[maxIdx + 1];
+        if (maybe && !maybe.startsWith('--')) {
+            const n = Number(maybe);
+            if (!Number.isNaN(n) && n > 0) ollamaMax = n;
+        }
+    }
+    const eqArg = rawArgs.find(a => a.startsWith('--ollama-max='));
+    if (eqArg) {
+        const val = Number(eqArg.split('=')[1]);
+        if (!Number.isNaN(val) && val > 0) ollamaMax = val;
+    }
 
     // Parse --exclude <csv>
     const excludeIdx = rawArgs.indexOf('--exclude');
@@ -253,6 +277,22 @@ function runCli(rawArgs) {
     return parsePdfFile(INPUT_FILE_PATH)
         .then(writeJsonFile)
         .then(data => flags.writeMarkdown ? writeMarkDownFile(data) : data)
+        .then(async data => {
+            if (enableOllama) {
+                try {
+                    const fileNameWithoutExt = data && data.fileNameWithoutExt ? data.fileNameWithoutExt : path.basename(INPUT_FILE_PATH, path.extname(INPUT_FILE_PATH));
+                    const jsonPath = path.resolve(process.cwd(), 'output', `${fileNameWithoutExt}.json`);
+                    const outputDir = path.resolve(process.cwd(), 'output');
+                    console.log('Running Ollama sentiment analysis...');
+                    const { MessageProcessor } = require('./ollama-sentiment');
+                    const processor = new MessageProcessor('llama3.1');
+                    await processor.processJsonFile(jsonPath, outputDir, { maxMessages: ollamaMax });
+                } catch (e) {
+                    console.error('Ollama sentiment analysis failed:', e && e.message ? e.message : e);
+                }
+            }
+            return data;
+        })
         .then(data => compileAndOutputStats(data, { writeCsv: flags.writeCsv, excludePatterns: flags.excludePatterns }))
         .catch(error => {
             console.error('Error:', error);
