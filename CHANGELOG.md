@@ -20,6 +20,7 @@ PR: [#19](https://github.com/jozecuervo/ofw-tools/pull/19)
 ### Changed
 - CLI help updated to document `--ollama`
 - CLI argument parsing made order-agnostic for input file (first non-flag token)
+ - Prompt tuned for high-conflict and deception detection; JSON output schema captured when available
 
 ### Dependencies
 - Added `ollama`, `fs-extra`, and `winston`

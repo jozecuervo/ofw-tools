@@ -10,6 +10,28 @@ const logger = createLogger({
 	transports: [new transports.Console(), new transports.File({ filename: 'process.log' })],
 });
 
+function extractJsonFromText(text) {
+	if (!text || typeof text !== 'string') return null;
+	const trimmed = text.trim();
+	// Direct JSON
+	if (trimmed.startsWith('{')) {
+		try { return JSON.parse(trimmed); } catch (_) {}
+	}
+	// Fenced JSON block
+	const fenceMatch = trimmed.match(/```json\s*([\s\S]*?)```/i);
+	if (fenceMatch && fenceMatch[1]) {
+		try { return JSON.parse(fenceMatch[1].trim()); } catch (_) {}
+	}
+	// Heuristic: first '{' to last '}'
+	const first = trimmed.indexOf('{');
+	const last = trimmed.lastIndexOf('}');
+	if (first !== -1 && last !== -1 && last > first) {
+		const candidate = trimmed.slice(first, last + 1);
+		try { return JSON.parse(candidate); } catch (_) {}
+	}
+	return null;
+}
+
 class MessageProcessor {
 	constructor(modelName = 'llama3.1', contextLimit = 3) {
 		this.modelName = modelName;
@@ -20,7 +42,26 @@ class MessageProcessor {
 	}
 
 	async processMessage(message, contextMessages = []) {
-		const prompt = 'Analyze the sentiment of the current message (positive, negative, or neutral) and provide a brief explanation, considering the context of prior messages. Respond strictly with one of: "positive", "negative", or "neutral" followed by a colon and a short reason.';
+		const prompt = `You are a forensic communication analyst.
+
+Analyze the CURRENT message using the prior messages as context. Detect high-conflict and deceptive language in a divorce conversation.
+
+Return ONLY compact JSON with keys: sentiment, conflict_level, deception_risk, flags, reason. Do not add extra text or explanations outside the JSON.
+
+Definitions:
+- sentiment: "positive" | "neutral" | "negative" | "mixed"
+- conflict_level: "low" | "medium" | "high"
+- deception_risk: "low" | "medium" | "high"
+- flags: zero or more of ["insult","threat","gaslighting" (denying reality to confuse),"darvo" (deny, attack, reverse victim/offender),"blame-shift","minimization","legal-threat","coercion","manipulation","profanity","boundary-violation","inconsistency" (mismatches with prior messages),"false-allegation"]
+- reason: one short sentence citing the behavior (quote or paraphrase)
+
+Consider indicators: aggression, contempt, threats, legal intimidation, shifting blame, inconsistencies with prior context, evasiveness, exaggerated absolutes, coercion, DARVO, gaslighting, false allegations.
+
+Few-shot example:
+Prior: "I'll pick up the kids at 5 PM as agreed."
+Current: "You never show up on time, you're always late and ruining their lives."
+Output: {"sentiment":"negative","conflict_level":"high","deception_risk":"medium","flags":["blame-shift","exaggerated-absolutes"],"reason":"Message shifts blame with exaggerated claim of 'always late' despite prior agreement."}
+`;
 		try {
 			// Limit context to avoid overwhelming the model
 			const context = contextMessages
@@ -91,20 +132,37 @@ class MessageProcessor {
 				if (!threadContexts[threadId]) threadContexts[threadId] = [];
 
 				try {
+					let parsed = null;
+					let sentimentLabel = 'unknown';
 					const result = await this.processMessage(message, threadContexts[threadId]);
 					const key = `${threadId}_${message.threadIndex}`;
 					if (result) {
+						parsed = extractJsonFromText(result);
+						sentimentLabel = parsed && typeof parsed.sentiment === 'string'
+							? parsed.sentiment
+							: (String(result).toLowerCase().match(/positive|negative|neutral/) || [null])[0] || 'unknown';
 						this.results[key] = {
 							status: 'success',
-							sentiment: result,
+							sentiment: sentimentLabel,
 							threadId,
 							threadIndex: message.threadIndex,
+						};
+						const stored = parsed || {
+							sentiment: sentimentLabel,
+							conflict_level: 'unknown',
+							deception_risk: 'unknown',
+							flags: [],
+							reason: '',
+							...(parsed ? {} : { raw: result })
 						};
 						this.threadSummaries[threadId].messages.push({
 							sender: message.sender,
 							sentDate: message.sentDate,
 							body: message.body,
-							sentiment: result,
+							sentiment: stored.sentiment,
+							conflict_level: stored.conflict_level,
+							deception_risk: stored.deception_risk,
+							flags: stored.flags,
 							threadIndex: message.threadIndex,
 						});
 						logger.info(`Processed message threadId:${threadId}, index:${message.threadIndex}`);
@@ -125,7 +183,15 @@ class MessageProcessor {
 						logger.error(`Failed to process message threadId:${threadId}, index:${message.threadIndex}`);
 					}
 
-					this.updatedMessages.push({ ...message, sentiment_ollama: result || 'Failed to process' });
+					const stored = parsed || {
+						sentiment: sentimentLabel,
+						conflict_level: 'unknown',
+						deception_risk: 'unknown',
+						flags: [],
+						reason: '',
+						...(parsed ? {} : { raw: result })
+					};
+					this.updatedMessages.push({ ...message, sentiment_ollama: stored });
 					threadContexts[threadId].push(message);
 					processed += 1;
 				} catch (error) {
