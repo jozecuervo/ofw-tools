@@ -148,23 +148,8 @@ function writeMarkDownFile(data) {
  * @param {Record<string, Record<string, any>>} stats - Per-week per-person stats
  */
 function outputMarkdownSummary(totals, stats, options = {}) {
-    if (options && options.threadStats) {
-        const ts = options.threadStats;
-        if (ts && ts.totals) {
-            const avg = Number(ts.totals.averageThreadLength);
-            console.log(`Threads: ${ts.totals.totalThreads} (avg length: ${Number.isFinite(avg) ? avg.toFixed(2) : '0.00'})`);
-        }
-        if (ts && ts.weekly && typeof ts.weekly === 'object') {
-            console.log('Weekly thread summary:');
-            Object.keys(ts.weekly).forEach(week => {
-                const w = ts.weekly[week] || {};
-                const avgW = Number(w.averageThreadLength);
-                console.log(`- ${week}: ${w.totalThreads} threads, avg length ${Number.isFinite(avgW) ? avgW.toFixed(2) : '0.00'}`);
-            });
-        }
-    }
-    console.log(formatTotalsMarkdown(totals, options));
     console.log(formatWeeklyMarkdown(stats, options));
+    console.log(formatTotalsMarkdown(totals, options));
 }
 
 

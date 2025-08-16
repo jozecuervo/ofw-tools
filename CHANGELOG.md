@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.10.0] - 2025-08-15
+
+PR: [#18](https://github.com/jozecuervo/ofw-tools/pull/18)
+
+### Added
+  - OFW:
+  - Added `assignThreads` function to assign threads to messages.
+  - Added `threadStats` to the output. (totals and weekly)
+  - Added `formatThreadStatsMarkdown` to the output.
+  - Added `formatThreadStatsCsv` to the output.
+  - Added `formatThreadStatsMarkdown` to the output.
+
 ## [1.9.0] - 2025-08-12
 
 PR: [#17](https://github.com/jozecuervo/ofw-tools/pull/13)

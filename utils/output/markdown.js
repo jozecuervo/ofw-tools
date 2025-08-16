@@ -44,9 +44,16 @@ function formatMessageMarkdown(message, index, total) {
 function formatTotalsMarkdown(totals, options = {}) {
   const shouldHide = createNameFilter(options.excludePatterns);
   let out = [];
-  out.push('\n');
+  // All-time totals summary (messages, threads, words)
+  const entries = Object.entries(totals || {});
+  const totalMessages = entries.reduce((acc, [, t]) => acc + (t && t.messagesSent ? t.messagesSent : 0), 0);
+  const totalWords = entries.reduce((acc, [, t]) => acc + (t && t.totalWords ? t.totalWords : 0), 0);
+  const ts = options && options.threadStats && options.threadStats.totals ? options.threadStats.totals : null;
+  
   let header = '| Name             | Sent | Words | View Time | Avg View Time | Avg. Sentiment | Sentiment ntrl |';
   let separator = '|------------------|------|-------|-----------|---------------|----------------|----------------|';
+  out.push('\n');
+  out.push(separator);
   out.push(header);
   out.push(separator);
   for (const [person, personTotals] of Object.entries(totals)) {
@@ -62,6 +69,14 @@ function formatTotalsMarkdown(totals, options = {}) {
     const row = `| ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedTotalTime} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} |`;
     out.push(row);
   }
+  out.push(separator);
+  if (ts) {
+    out.push(`All-time totals — Messages: ${totalMessages}, Threads: ${ts.totalThreads}, Avg Thread Length: ${Number(ts.averageThreadLength).toFixed(2)}, Words: ${totalWords}`);
+    out.push('');
+  } else {
+    out.push(`All-time totals — Messages: ${totalMessages}, Words: ${totalWords}`);
+    out.push('');
+  }
   out.push('\n');
   return out.join('\n');
 }
@@ -70,8 +85,8 @@ function formatWeeklyMarkdown(stats, options = {}) {
   const shouldHide = createNameFilter(options.excludePatterns);
 
   let out = [];
-  let header = '| Week                  | Name             | Sent | Words | Avg View Time | Avg. Sentiment | Sentiment ntrl |';
-  let separator = '|-----------------------|------------------|------|-------|---------------|----------------|----------------|';
+  let header = '| Week                  | Name             | Sent | Words | Avg View Time | Avg. Sentiment | Sentiment ntrl | Threads | Avg Thread |';
+  let separator = '|-----------------------|------------------|------|-------|---------------|----------------|----------------|---------|------------|';
   out.push(separator);
   out.push(header);
   let previousWeek = null;
@@ -90,6 +105,15 @@ function formatWeeklyMarkdown(stats, options = {}) {
       const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} |`;
       out.push(row);
       previousWeek = week;
+    }
+    // Add weekly thread summary row if available
+    const weeklyThreads = options && options.threadStats && options.threadStats.weekly ? options.threadStats.weekly[week] : null;
+    if (weeklyThreads) {
+      const paddedThreads = String(weeklyThreads.totalThreads).padStart(7);
+      const avgStr = Number(weeklyThreads.averageThreadLength).toFixed(2).toString().padStart(10);
+      const paddedAvgTime = ' '.padStart(14);
+      const row = `| ${''.padEnd(21)} | ${''.padEnd(16)} |${''.padEnd(5)} |${''.padStart(6)} |${paddedAvgTime} | ${' '.padStart(14)} | ${' '.padStart(14)} | ${paddedThreads} | ${avgStr} |`;
+      out.push(row);
     }
   }
   out.push(separator);
