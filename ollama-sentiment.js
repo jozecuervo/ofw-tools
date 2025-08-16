@@ -297,6 +297,12 @@ Output: {"sentiment":"negative","conflict_level":"high","deception_risk":"medium
 			const summaryContent = this.generateSummaryMarkdown();
 			await fs.writeFile(summaryFile, summaryContent);
 			logger.info(`Saved summary to ${summaryFile}`);
+
+			// Threaded view including LLM sentiment
+			const threadsLlmFile = path.join(outputDir, `${inputBase} - threads.llm.md`);
+			const threadsLlmContent = this.generateThreadedLlmMarkdown();
+			await fs.writeFile(threadsLlmFile, threadsLlmContent);
+			logger.info(`Saved LLM threaded summary to ${threadsLlmFile}`);
 		} catch (error) {
 			logger.error(`Error reading file ${inputFile}: ${error.message}`);
 		}
@@ -332,6 +338,28 @@ Output: {"sentiment":"negative","conflict_level":"high","deception_risk":"medium
 		markdown += `- **Positive**: ${sentiments.positive}\n`;
 		markdown += `- **Negative**: ${sentiments.negative}\n`;
 		markdown += `- **Neutral**: ${sentiments.neutral}\n`;
+		return markdown;
+	}
+
+	generateThreadedLlmMarkdown() {
+		let markdown = '# Threaded LLM Sentiment Summary\n\n';
+		for (const threadId in this.threadSummaries) {
+			const thread = this.threadSummaries[threadId];
+			markdown += `## ${thread.subject}\n`;
+			markdown += `- From/Participants: ${thread.participants.join(', ')}\n`;
+			markdown += `- Messages: ${thread.messages.length}\n\n`;
+			for (const msg of thread.messages) {
+				const dt = new Date(msg.sentDate).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' });
+				const flags = Array.isArray(msg.flags) && msg.flags.length ? msg.flags.join(', ') : '';
+				const body = String(msg.body || '').replace(/\n/g, ' ');
+				const toLine = ''; // Not available here; this is a summary view
+				markdown += `- From: **${msg.sender}** ${dt}\n`;
+				if (toLine) markdown += `- To:\n${toLine}\n`;
+				markdown += `- Message ${msg.threadIndex}\n`;
+				markdown += `- Word Count: **${(body.match(/\S+/g)||[]).length}**, LLM Sentiment: **${msg.sentiment || ''}**, Conflict: **${msg.conflict_level || ''}**, Deception: **${msg.deception_risk || ''}**${flags ? `, Flags: **${flags}**` : ''}\n\n`;
+				markdown += `${body}\n\n`;
+			}
+		}
 		return markdown;
 	}
 }

@@ -1,9 +1,5 @@
 ## OFW Tools: Divorce and Communication Analysis Toolkit
 
-### ⚠️ IMPORTANT LEGAL DISCLAIMER
-
-**This toolkit is for educational and calculation purposes only and does not constitute legal advice.** Property division, family law issues, and communication analysis involve complex legal and factual determinations that vary by jurisdiction and individual circumstances. Always consult with a qualified family law attorney before making decisions based on these calculations or analysis. The tools do not account for many factors that may affect legal outcomes, including transmutations, agreements, refinances, improvements, or other legal doctrines.
-
 ### Overview
 
 Local-first Node.js CLIs that streamline common family-law workflows. These tools help you quickly analyze communications, generate calendars, compute property/equity figures, and now parse paychecks — all on your machine for privacy and speed. Outputs favor simple formats (CSV/Markdown/JSON) that drop easily into exhibits or spreadsheets.
@@ -433,3 +429,8 @@ You can also use these prompts to guide code generation, reviews, and testing ta
 ### Licensing
 
 Prompts are governed by `PROMPTS_LICENSE.md` and may differ from the code license.
+
+
+### ⚠️ IMPORTANT LEGAL DISCLAIMER
+
+**This toolkit is for educational and calculation purposes only and does not constitute legal advice.** Property division, family law issues, and communication analysis involve complex legal and factual determinations that vary by jurisdiction and individual circumstances. Always consult with a qualified family law attorney before making decisions based on these calculations or analysis. The tools do not account for many factors that may affect legal outcomes, including transmutations, agreements, refinances, improvements, or other legal doctrines.
