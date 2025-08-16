@@ -77,6 +77,32 @@ function formatTimeHHMM(value) {
   return d.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
+// ISO date formatter used by CSV builders
+function toISODate(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Parse a human week label to ISO start/end (supports ISO ranges and "Mon dd - Mon dd, yyyy")
+function parseWeekLabelToStartEnd(label) {
+  if (!label || typeof label !== 'string') return { startISO: '', endISO: '' };
+  const isoMatch = label.match(/(\d{4}-\d{2}-\d{2})\s*[–-]\s*(\d{4}-\d{2}-\d{2})/);
+  if (isoMatch) return { startISO: isoMatch[1], endISO: isoMatch[2] };
+  const m = label.match(/^([A-Za-z]{3})\s+(\d{1,2})\s*-\s*([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{4})$/);
+  if (!m) return { startISO: '', endISO: '' };
+  const monthToIndex = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
+  const startMon = monthToIndex[m[1].toLowerCase()];
+  const startDay = Number(m[2]);
+  const endMon = monthToIndex[m[3].toLowerCase()];
+  const endDay = Number(m[4]);
+  const endYear = Number(m[5]);
+  let startYear = endYear;
+  if (startMon === 11 && endMon === 0) startYear = endYear - 1;
+  return { startISO: toISODate(new Date(startYear, startMon, startDay)), endISO: toISODate(new Date(endYear, endMon, endDay)) };
+}
+
 // OFW-specific date parsing/formatting
 function parseDate(dateStr) {
   const s = String(dateStr).replace(' at ', ' ').trim();
@@ -125,6 +151,8 @@ module.exports = {
   formatDateMMDDYYYY,
   formatTimeHHMM,
   getWeekString,
+  toISODate,
+  parseWeekLabelToStartEnd,
   parseDate,
   formatDate: formatDateGeneric,
 };

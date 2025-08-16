@@ -56,11 +56,11 @@ describe('utils/output top2', () => {
     expect(lines[2]).toMatch(/^"?Week2"?,/);
   });
 
-  test('computeTone blends libraries into [-1,1] range', () => {
-    const t1 = computeTone({ avgSentiment: 10, sentiment_natural: 2 });
-    expect(t1).toBeGreaterThan(0);
-    const t2 = computeTone({ avgSentiment: -10, sentiment_natural: -2 });
-    expect(t2).toBeLessThan(0);
+  test('computeTone averages per-message tone when provided', () => {
+    const t1 = computeTone({ messagesSent: 2, toneTotal: 1.2 }); // avg 0.6
+    expect(t1).toBeCloseTo(0.6, 5);
+    const t2 = computeTone({ messagesSent: 3, toneTotal: -0.9 }); // avg -0.3
+    expect(t2).toBeCloseTo(-0.3, 5);
     const t3 = computeTone(null);
     expect(t3).toBe(0);
   });

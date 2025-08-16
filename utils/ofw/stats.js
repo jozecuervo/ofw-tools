@@ -1,5 +1,19 @@
 const { getWeekString } = require('../date');
 
+const defaultStats = {
+  messagesSent: 0,
+  messagesRead: 0,
+  totalReadTime: 0,
+  totalWords: 0,
+  sentiment: 0,
+  sentiment_natural: 0,
+  sentiment_per_word: 0,
+  natural_per_word: 0,
+  avgSentimentNatural: 0,
+  toneTotal: 0,
+  averageReadTime: 0,
+};
+
 /**
  * Accumulate weekly and total statistics from parsed messages.
  * @param {Array<object>} messages
@@ -18,27 +32,13 @@ function accumulateStats(messages) {
 
     if (!totals[sender]) {
       totals[sender] = {
-        messagesSent: 0,
-        messagesRead: 0,
-        totalReadTime: 0,
-        totalWords: 0,
-        sentiment: 0,
-        sentiment_natural: 0,
-        avgSentimentNatural: 0,
-        averageReadTime: 0,
+        ...defaultStats,
       };
     }
     if (!stats[weekString]) stats[weekString] = {};
     if (!stats[weekString][sender]) {
       stats[weekString][sender] = {
-        messagesSent: 0,
-        messagesRead: 0,
-        totalReadTime: 0,
-        totalWords: 0,
-        sentiment: 0,
-        sentiment_natural: 0,
-        avgSentimentNatural: 0,
-        averageReadTime: 0,
+        ...defaultStats,
       };
     }
 
@@ -46,11 +46,17 @@ function accumulateStats(messages) {
     totals[sender].totalWords += message.wordCount;
     totals[sender].sentiment += message.sentiment;
     totals[sender].sentiment_natural += message.sentiment_natural;
+    if (Number.isFinite(message.sentiment_per_word)) totals[sender].sentiment_per_word += message.sentiment_per_word;
+    if (Number.isFinite(message.natural_per_word)) totals[sender].natural_per_word += message.natural_per_word;
+    if (Number.isFinite(message.tone)) totals[sender].toneTotal += message.tone;
 
     stats[weekString][sender].messagesSent++;
     stats[weekString][sender].totalWords += message.wordCount;
     stats[weekString][sender].sentiment += message.sentiment;
     stats[weekString][sender].sentiment_natural += message.sentiment_natural;
+    if (Number.isFinite(message.sentiment_per_word)) stats[weekString][sender].sentiment_per_word += message.sentiment_per_word;
+    if (Number.isFinite(message.natural_per_word)) stats[weekString][sender].natural_per_word += message.natural_per_word;
+    if (Number.isFinite(message.tone)) stats[weekString][sender].toneTotal += message.tone;
 
     for (const [recipient, firstViewed] of Object.entries(message.recipientReadTimes)) {
       if (firstViewed !== 'Never') {
@@ -59,22 +65,12 @@ function accumulateStats(messages) {
 
         if (!totals[recipient]) {
           totals[recipient] = {
-            messagesSent: 0,
-            messagesRead: 0,
-            totalReadTime: 0,
-            totalWords: 0,
-            sentiment: 0,
-            sentiment_natural: 0,
+            ...defaultStats,
           };
         }
         if (!stats[weekString][recipient]) {
           stats[weekString][recipient] = {
-            messagesSent: 0,
-            messagesRead: 0,
-            totalReadTime: 0,
-            totalWords: 0,
-            sentiment: 0,
-            sentiment_natural: 0,
+            ...defaultStats,
           };
         }
         stats[weekString][recipient].messagesRead++;
@@ -91,8 +87,12 @@ function accumulateStats(messages) {
     totals[person].averageReadTime = total.messagesRead === 0 ? 0 : total.totalReadTime / total.messagesRead;
     totals[person].avgSentiment = total.messagesSent === 0 ? 0 : total.sentiment / total.messagesSent;
     totals[person].avgSentimentNatural = total.messagesSent === 0 ? 0 : total.sentiment_natural / total.messagesSent;
+    totals[person].avgSentimentPerWord = total.messagesSent === 0 ? 0 : total.sentiment_per_word / total.messagesSent;
+    totals[person].avgNaturalPerWord = total.messagesSent === 0 ? 0 : total.natural_per_word / total.messagesSent;
     if (!Number.isFinite(totals[person].avgSentiment)) totals[person].avgSentiment = 0;
     if (!Number.isFinite(totals[person].avgSentimentNatural)) totals[person].avgSentimentNatural = 0;
+    if (!Number.isFinite(totals[person].avgSentimentPerWord)) totals[person].avgSentimentPerWord = 0;
+    if (!Number.isFinite(totals[person].avgNaturalPerWord)) totals[person].avgNaturalPerWord = 0;
     if (!Number.isFinite(totals[person].averageReadTime)) totals[person].averageReadTime = 0;
     totals[person].tone = computeTone(totals[person]);
   });
@@ -104,6 +104,10 @@ function accumulateStats(messages) {
       personStats.averageReadTime = personStats.messagesRead === 0 ? 0 : personStats.totalReadTime / personStats.messagesRead;
       personStats.avgSentiment = personStats.messagesSent > 0 ? (personStats.sentiment / personStats.messagesSent) : 0;
       personStats.avgSentimentNatural = personStats.messagesSent > 0 ? (personStats.sentiment_natural / personStats.messagesSent) : 0;
+      personStats.avgSentimentPerWord = personStats.messagesSent > 0 ? (personStats.sentiment_per_word / personStats.messagesSent) : 0;
+      personStats.avgNaturalPerWord = personStats.messagesSent > 0 ? (personStats.natural_per_word / personStats.messagesSent) : 0;
+      if (!Number.isFinite(personStats.avgSentimentPerWord)) personStats.avgSentimentPerWord = 0;
+      if (!Number.isFinite(personStats.avgNaturalPerWord)) personStats.avgNaturalPerWord = 0;
       if (!Number.isFinite(personStats.avgSentimentNatural)) personStats.avgSentimentNatural = 0;
       personStats.tone = computeTone(personStats);
     }
@@ -112,20 +116,13 @@ function accumulateStats(messages) {
   return { totals, weekly: stats };
 }
 
-// Compute a normalized tone value between the two sentiment libraries.
-// Approach: clamp scaled values to [-1, 1], then average them equally.
+// Compute tone as weekly/total average of per-message tone (computed in metrics)
 function computeTone(personStats) {
   if (!personStats || typeof personStats !== 'object') return 0;
-  const s = Number(personStats.avgSentiment);
-  // Prefer averaged Natural score for apples-to-apples blending; fallback to summed if average not available.
-  const nAvg = (personStats.avgSentimentNatural !== undefined)
-    ? Number(personStats.avgSentimentNatural)
-    : Number(personStats.sentiment_natural);
-  const sNorm = clamp(s / 12, -1, 1);
-  // Boost natural's influence: typical range ~ -0.2..1.1 → scale by ~0.2
-  const nNorm = clamp(nAvg / 0.2, -1, 1);
-  const avg = (sNorm + nNorm) / 2;
-  return clamp(avg, -1, 1);
+  const sent = Number(personStats.messagesSent) || 0;
+  const toneTotal = Number(personStats.toneTotal) || 0;
+  if (sent <= 0) return 0;
+  return clamp(toneTotal / sent, -1, 1);
 }
 
 function clamp(x, lo, hi) {

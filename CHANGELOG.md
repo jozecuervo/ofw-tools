@@ -4,7 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.9.0] - 2025-08-12
+
+PR: [#17](https://github.com/jozecuervo/ofw-tools/pull/13)
+
+### Changed
+- DRY and pipeline updates for OFW:
+  - Moved week-range parsing and ISO helpers to `utils/date.js` (`parseWeekLabelToStartEnd`, `toISODate`).
+  - CSV Top2 header standardized to start with `Week Start,Sent …`.
+  - Removed duplicate message template in `ofw.js`; `writeMarkDownFile` now uses `formatMessageMarkdown`.
+  - Introduced generic CSV writer `outputCsvWith()` used for weekly and Top2 outputs.
+  - Centralized name filtering via `createNameFilter()` reused by totals/weekly Markdown.
+  - Sentiment computation moved from parser to metrics; `computeDerivedMetrics` always computes from message body.
+
 ## [1.8.0] - 2025-08-11
+
+PR: [#16](https://github.com/jozecuervo/ofw-tools/pull/16)
+
 ### Added
 - `formatWeeklyTop2Csv` function to output CSV for the top 2 senders across all weeks.
 - `computeTone` function to compute a normalized tone value between the two sentiment libraries.
@@ -12,6 +28,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - `formatWeeklyTop2Csv` function to output CSV for the top 2 senders across all weeks.
 
 ## [1.7.0] - 2025-08-10
+
+PR: [#15](https://github.com/jozecuervo/ofw-tools/pull/15)
 
 ### Changed
 - Paylocity tools now conform to repo conventions:
@@ -27,6 +45,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - References to California Family Code §§ 4055, 4058, 4059 where relevant
 
 ## [1.6.0] - 2025-08-10
+
+PR: [#13](https://github.com/jozecuervo/ofw-tools/pull/13)
 
 ### Added
 - **DissoMaster Calculator**: Comprehensive California spousal support calculator with CLI interface (`dissomaster.js`)

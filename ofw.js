@@ -9,7 +9,8 @@
  * Pipeline
  * 1) parsePdfFile: read PDF → text
  * 2) processMessages: split text by "Message N of M" → parseMessage for each block
- * 3) writeJsonFile: persist parsed messages alongside the PDF basename
+ * 3) computeDerivedMetrics: compute word counts and sentiment per message
+ * 4) writeJsonFile: persist parsed messages
  * 4) writeMarkDownFile: write a per-message Markdown file (optional)
  * 5) compileAndOutputStats: compute per-week/person stats; write CSV (optional); print Markdown tables
  *
@@ -21,12 +22,12 @@
 const path = require('path');
 
 const { parsePdf } = require('./utils');
-const { writeFile, writeJson } = require('./utils');
-const { formatDate } = require('./utils');
 const { processMessages } = require('./utils/ofw/parser');
+const { computeDerivedMetrics } = require('./utils/ofw/metrics');
 const { accumulateStats } = require('./utils/ofw/stats');
 const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('./utils/output/markdown');
 const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('./utils/output/csv');
+const { writeFile, writeJson } = require('./utils');
 
 /**
  * Parse a single OFW message block into a message object.
@@ -81,8 +82,10 @@ async function parsePdfFile(inputFilePath) {
     try {
         const pdfText = await parsePdf(inputFilePath);
         console.log('PDF text parsed');
-        const messages = processMessages(pdfText);
-        console.log(`Processed ${messages.length} messages`);
+        const parsed = processMessages(pdfText);
+        console.log(`Processed ${parsed.length} messages`);
+        const messages = computeDerivedMetrics(parsed);
+        console.log('Computed derived metrics');
         const directory = path.dirname(inputFilePath);
         const fileNameWithoutExt = path.basename(inputFilePath, path.extname(inputFilePath));
         return { messages, directory, fileNameWithoutExt };
@@ -111,31 +114,6 @@ function writeJsonFile(data) {
         }
     });
 }
-const messageTemplate = (message, index, total) => {
-    const {
-        sentDate,
-        sender,
-        recipientReadTimes,
-        wordCount,
-        sentiment,
-        sentiment_natural,
-        subject,
-        body,
-    } = message;
-    return `
------------------------------------------------------
-## Message ${index + 1} of ${total}
-- Sent: ${formatDate(sentDate)}
-- From: ${sender}
-- To:
-${Object.entries(recipientReadTimes).map(([recipient, firstViewed]) => `   - ${recipient}: ${formatDate(firstViewed)}`).join('\n')}
-- Word Count: ${wordCount}, Sentiment: ${sentiment}, ${sentiment_natural}
-- Subject: ${subject}
-
-${body}
-`};
-
-
 /**
  * Write a per-message Markdown file next to the input PDF.
  * @param {{ messages:Array<object>, directory:string, fileNameWithoutExt:string }} data
@@ -147,8 +125,9 @@ function writeMarkDownFile(data) {
             const { messages, directory, fileNameWithoutExt } = data;
             let markdownContent = '';
             messages.forEach((message, index) => {
-                const messageContent = messageTemplate(message, index, messages.length);
-                markdownContent += messageContent;
+                if (message && message._nonMessage) return;
+                const messageContent = formatMessageMarkdown(message, index, messages.length);
+                markdownContent += messageContent + '\n';
             });
             const outDir = path.resolve(process.cwd(), 'output');
             const markdownFilePath = path.join(outDir, `${fileNameWithoutExt}.md`);
@@ -188,14 +167,15 @@ function outputCSV(stats, filePath) {
     writeFile(filePath, csvOutput);
 }
 
-function outputTop2CSV(stats, filePath) {
-    if (!filePath) {
-        console.log('Top2 CSV output disabled.');
-        return;
-    }
-    const csvOutput = formatWeeklyTop2Csv(stats);
-    console.log(`Writing Top2 CSV to ${filePath}`);
-    writeFile(filePath, csvOutput);
+// Generic CSV writer
+function outputCsvWith(formatter, data, filePath, label = 'CSV') {
+  if (!filePath) {
+    console.log(`${label} output disabled.`);
+    return;
+  }
+  const csvOutput = formatter(data);
+  console.log(`Writing ${label} to ${filePath}`);
+  writeFile(filePath, csvOutput);
 }
 
 /**
@@ -208,8 +188,8 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
     const outDir = path.resolve(process.cwd(), 'output');
     const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.csv`) : null;
     const top2CsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.top2.csv`) : null;
-    outputCSV(weekly, csvFilePath);
-    outputTop2CSV(weekly, top2CsvPath);
+    outputCsvWith(formatWeeklyCsv, weekly, csvFilePath, 'CSV');
+    outputCsvWith(formatWeeklyTop2Csv, weekly, top2CsvPath, 'Top2 CSV');
     outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns });
 }
 
