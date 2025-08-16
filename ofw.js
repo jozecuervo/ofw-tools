@@ -148,11 +148,9 @@ function writeMarkDownFile(data) {
  * @param {Record<string, Record<string, any>>} stats - Per-week per-person stats
  */
 function outputMarkdownSummary(totals, stats, options = {}) {
-    console.log(formatTotalsMarkdown(totals, options));
     console.log(formatWeeklyMarkdown(stats, options));
+    console.log(formatTotalsMarkdown(totals, options));
 }
-
-
 
 /**
  * Write weekly stats to CSV.
@@ -188,8 +186,8 @@ function outputCsvWith(formatter, data, filePath, label = 'CSV') {
 function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, options = { writeCsv: true, excludePatterns: [] }) {
     const { totals, weekly, threadStats } = accumulateStats(messages);
     const outDir = path.resolve(process.cwd(), 'output');
-    const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.csv`) : null;
-    const top2CsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.top2.csv`) : null;
+    const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}-senders.csv`) : null;
+    const top2CsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}-top2-comparison.csv`) : null;
     outputCsvWith(formatWeeklyCsv, weekly, csvFilePath, 'CSV');
     outputCsvWith(formatWeeklyTop2Csv, weekly, top2CsvPath, 'Top2 CSV');
     outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns, threadStats });
