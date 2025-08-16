@@ -22,6 +22,17 @@ const defaultStats = {
 function accumulateStats(messages) {
   const stats = {};
   const totals = {};
+  // Thread tracking: global and per-week maps of threadKey -> count (within that scope)
+  const globalThreadCounts = new Map();
+  const weeklyThreadCounts = {}; // week -> Map
+
+  function getThreadKeyForStats(message) {
+    if (!message || typeof message !== 'object') return 'unknown';
+    if (message.threadId != null) return `id:${message.threadId}`;
+    if (message.threadKey) return `key:${String(message.threadKey)}`;
+    const subj = String(message.subject || '').toLowerCase().trim();
+    return `subj:${subj}`;
+  }
 
   messages.forEach(message => {
     if (message && (message._nonMessage || !message.sentDate || !message.sender)) {
@@ -29,6 +40,11 @@ function accumulateStats(messages) {
     }
     const weekString = getWeekString(message.sentDate);
     const sender = message.sender || 'Unknown';
+    // Ensure week thread map exists
+    if (!weeklyThreadCounts[weekString]) weeklyThreadCounts[weekString] = new Map();
+    const threadKey = getThreadKeyForStats(message);
+    weeklyThreadCounts[weekString].set(threadKey, (weeklyThreadCounts[weekString].get(threadKey) || 0) + 1);
+    globalThreadCounts.set(threadKey, (globalThreadCounts.get(threadKey) || 0) + 1);
 
     if (!totals[sender]) {
       totals[sender] = {
@@ -61,7 +77,8 @@ function accumulateStats(messages) {
     for (const [recipient, firstViewed] of Object.entries(message.recipientReadTimes)) {
       if (firstViewed !== 'Never') {
         const firstViewedDate = new Date(firstViewed);
-        const readTime = (firstViewedDate - message.sentDate) / 60000;
+        // Convert to hours at accumulation time (was minutes previously)
+        const readTime = (firstViewedDate - message.sentDate) / 3600000;
 
         if (!totals[recipient]) {
           totals[recipient] = {
@@ -113,7 +130,29 @@ function accumulateStats(messages) {
     }
   }
 
-  return { totals, weekly: stats };
+  // Finalize thread metrics
+  const threadStatsWeekly = {};
+  Object.entries(weeklyThreadCounts).forEach(([week, map]) => {
+    const counts = Array.from(map.values());
+    const totalThreads = counts.length;
+    const avg = counts.length ? counts.reduce((a, b) => a + b, 0) / counts.length : 0;
+    threadStatsWeekly[week] = {
+      totalThreads,
+      averageThreadLength: Number.isFinite(avg) ? Number(avg.toFixed(2)) : 0,
+    };
+  });
+  const globalCounts = Array.from(globalThreadCounts.values());
+  const globalTotalThreads = globalCounts.length;
+  const globalAvg = globalCounts.length ? globalCounts.reduce((a, b) => a + b, 0) / globalCounts.length : 0;
+  const threadStats = {
+    totals: {
+      totalThreads: globalTotalThreads,
+      averageThreadLength: Number.isFinite(globalAvg) ? Number(globalAvg.toFixed(2)) : 0,
+    },
+    weekly: threadStatsWeekly,
+  };
+
+  return { totals, weekly: stats, threadStats };
 }
 
 // Compute tone as weekly/total average of per-message tone (computed in metrics)

@@ -24,9 +24,11 @@ const path = require('path');
 const { parsePdf } = require('./utils');
 const { processMessages } = require('./utils/ofw/parser');
 const { computeDerivedMetrics } = require('./utils/ofw/metrics');
+const { assignThreads } = require('./utils/ofw/threads');
 const { accumulateStats } = require('./utils/ofw/stats');
-const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('./utils/output/markdown');
-const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('./utils/output/csv');
+const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown, formatThreadTreeMarkdown } = require('./utils/output/markdown');
+const { formatWeeklyCsv, formatWeeklyTop2Csv, formatThreadsCsv } = require('./utils/output/csv');
+const { summarizeThreads } = require('./utils/ofw/threads');
 const { writeFile, writeJson } = require('./utils');
 
 /**
@@ -84,6 +86,7 @@ async function parsePdfFile(inputFilePath) {
         console.log('PDF text parsed');
         const parsed = processMessages(pdfText);
         console.log(`Processed ${parsed.length} messages`);
+        assignThreads(parsed);
         const messages = computeDerivedMetrics(parsed);
         console.log('Computed derived metrics');
         const directory = path.dirname(inputFilePath);
@@ -133,6 +136,11 @@ function writeMarkDownFile(data) {
             const markdownFilePath = path.join(outDir, `${fileNameWithoutExt}.md`);
             console.log(`Writing all messages to ${markdownFilePath}`);
             writeFile(markdownFilePath, markdownContent);
+            // Also write thread tree view
+            const threadMd = formatThreadTreeMarkdown(messages);
+            const threadFilePath = path.join(outDir, `${fileNameWithoutExt}.threads.md`);
+            console.log(`Writing thread tree to ${threadFilePath}`);
+            writeFile(threadFilePath, threadMd);
             resolve(data);  // Pass the data object along for further processing
         } catch (error) {
             reject(`Failed to write Markdown file: ${error}`);
@@ -146,11 +154,11 @@ function writeMarkDownFile(data) {
  * @param {Record<string, Record<string, any>>} stats - Per-week per-person stats
  */
 function outputMarkdownSummary(totals, stats, options = {}) {
-    console.log(formatTotalsMarkdown(totals, options));
     console.log(formatWeeklyMarkdown(stats, options));
+    // output threaded message tree to console
+    // console.log(formatThreadStatsMarkdown(totals, options));
+    console.log(formatTotalsMarkdown(totals, options));
 }
-
-
 
 /**
  * Write weekly stats to CSV.
@@ -184,13 +192,30 @@ function outputCsvWith(formatter, data, filePath, label = 'CSV') {
  * @param {{ writeCsv?: boolean }} options
  */
 function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, options = { writeCsv: true, excludePatterns: [] }) {
-    const { totals, weekly } = accumulateStats(messages);
+    const { totals, weekly, threadStats } = accumulateStats(messages);
     const outDir = path.resolve(process.cwd(), 'output');
-    const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.csv`) : null;
-    const top2CsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.top2.csv`) : null;
+    const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}-senders.csv`) : null;
+    const top2CsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}-top2-comparison.csv`) : null;
+    const threadsCsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}-threads.csv`) : null;
     outputCsvWith(formatWeeklyCsv, weekly, csvFilePath, 'CSV');
     outputCsvWith(formatWeeklyTop2Csv, weekly, top2CsvPath, 'Top2 CSV');
-    outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns });
+    const threadSummaries = summarizeThreads(messages);
+    outputCsvWith(formatThreadsCsv, threadSummaries, threadsCsvPath, 'Threads CSV');
+    // Augment threadStats with richer averages from summaries
+    const nThreads = threadSummaries.length || 0;
+    const sumMsgs = threadSummaries.reduce((a, t) => a + (Number(t.messages) || 0), 0);
+    const sumDays = threadSummaries.reduce((a, t) => a + (Number(t.spanDays) || 0), 0);
+    const sumWords = threadSummaries.reduce((a, t) => a + (Number(t.totalWords) || 0), 0);
+    const enrichedThreadStats = {
+      ...threadStats,
+      totals: {
+        ...(threadStats && threadStats.totals ? threadStats.totals : {}),
+        avgMessagesPerThread: nThreads ? Number((sumMsgs / nThreads).toFixed(2)) : 0,
+        avgDaysPerThread: nThreads ? Number((sumDays / nThreads).toFixed(2)) : 0,
+        avgWordsPerThread: nThreads ? Number((sumWords / nThreads).toFixed(2)) : 0,
+      },
+    };
+    outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns, threadStats: enrichedThreadStats });
 }
 
 

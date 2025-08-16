@@ -1,5 +1,6 @@
-const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('../utils/output/markdown');
-const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('../utils/output/csv');
+const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown, formatThreadTreeMarkdown } = require('../utils/output/markdown');
+const { formatWeeklyCsv, formatWeeklyTop2Csv, formatThreadsCsv } = require('../utils/output/csv');
+const { summarizeThreads } = require('../utils/ofw/threads');
 const { computeTone } = require('../utils/ofw/stats');
 
 describe('utils/output', () => {
@@ -17,6 +18,33 @@ describe('utils/output', () => {
     expect(str).toMatch(/Message 1 of 1/);
     expect(str).toMatch(/Hello/);
     expect(str).toMatch(/World/);
+  });
+
+  test('formatThreadsCsv emits one row per thread with participants', () => {
+    const msgs = [
+      { threadId: 1, subject: 'Hello', sender: 'A', recipientReadTimes: { B: 'Never' }, sentDate: new Date('2025-01-01T00:00:00'), body: 'First', wordCount: 5, sentiment: 0, tone: 0 },
+      { threadId: 1, subject: 'Re: Hello', sender: 'B', recipientReadTimes: { A: 'Never' }, sentDate: new Date('2025-01-01T01:00:00'), body: 'Second', wordCount: 4, sentiment: 0, tone: 0 },
+      { threadId: 2, subject: 'Other', sender: 'C', recipientReadTimes: {}, sentDate: new Date('2025-01-02T00:00:00'), body: 'Third', wordCount: 3, sentiment: 0, tone: 0 },
+    ];
+    const summaries = summarizeThreads(msgs);
+    const csv = formatThreadsCsv(summaries);
+    const lines = csv.trim().split('\n');
+    expect(lines[0]).toMatch(/Thread ID,Thread Key,Subject/);
+    expect(lines.length).toBe(1 + 2);
+    expect(csv).toMatch(/Hello/);
+    expect(csv).toMatch(/Other/);
+  });
+
+  test('formatThreadTreeMarkdown groups by thread and lists messages', () => {
+    const msgs = [
+      { threadId: 1, subject: 'Hello', sender: 'A', recipientReadTimes: {}, sentDate: new Date('2025-01-01T00:00:00'), body: 'First' },
+      { threadId: 1, subject: 'Re: Hello', sender: 'B', recipientReadTimes: {}, sentDate: new Date('2025-01-01T01:00:00'), body: 'Second' },
+      { threadId: 2, subject: 'Other', sender: 'C', recipientReadTimes: {}, sentDate: new Date('2025-01-02T00:00:00'), body: 'Third' },
+    ];
+    const md = formatThreadTreeMarkdown(msgs);
+    expect(md).toMatch(/# Threads/);
+    expect(md).toMatch(/Thread 1: Hello \(2\)/);
+    expect(md).toMatch(/Thread 2: Other \(1\)/);
   });
 
   test('formatWeeklyCsv outputs header and rows', () => {

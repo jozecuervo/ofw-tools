@@ -36,10 +36,11 @@ function formatWeeklyTop2Csv(stats) {
     const a = w[nameA] || {};
     const b = w[nameB] || {};
     const { startISO } = parseWeekLabelToStartEnd(week);
+    const weekLabel = startISO || week; // Fallback to original label if not parseable
     const toneA = (w[nameA] && Number.isFinite(Number(w[nameA].tone))) ? w[nameA].tone : 0;
     const toneB = (w[nameB] && Number.isFinite(Number(w[nameB].tone))) ? w[nameB].tone : 0;
     const row = [
-      startISO,
+      weekLabel,
       safeInt(a.messagesSent),
       safeInt(b.messagesSent),
       safeInt(a.totalWords),
@@ -77,8 +78,14 @@ function getGlobalTopNSenders(stats, n) {
 
 function csvCell(val) {
   if (val === null || val === undefined) return '';
-  if (typeof val === 'string') return `"${val}"`;
-  return String(val);
+  const s = typeof val === 'string' ? val : String(val);
+  // Escape double quotes by doubling them per RFC 4180
+  const escaped = s.replace(/"/g, '""');
+  // Quote if the cell contains special characters
+  if (/[",\n\r]/.test(escaped)) {
+    return `"${escaped}"`;
+  }
+  return escaped;
 }
 
 function safeInt(val) {
@@ -92,3 +99,41 @@ function safeNum(val) {
 }
 
 module.exports.formatWeeklyTop2Csv = formatWeeklyTop2Csv;
+
+// Threads CSV: one row per thread with summary metrics
+function formatThreadsCsv(threadSummaries) {
+  const header = [
+    'Thread ID','Thread Key','Subject','Messages','First Sent','Last Sent','Span Days','Participants','Total Words','Avg Sentiment','Tone'
+  ].join(',');
+  const rows = [header];
+  const toLocalYMDHM = (val) => {
+    if (!val) return '';
+    const d = (val instanceof Date) ? val : new Date(val);
+    if (!(d instanceof Date) || isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+  };
+  (threadSummaries || []).forEach(t => {
+    const cells = [
+      t.threadId,
+      csvCell(t.threadKey || ''),
+      csvCell(t.subject || ''),
+      safeInt(t.messages),
+      csvCell(toLocalYMDHM(t.firstSentISO || '')),
+      csvCell(toLocalYMDHM(t.lastSentISO || '')),
+      safeNum(t.spanDays),
+      csvCell((t.participants || []).join('; ')),
+      safeInt(t.totalWords),
+      safeNum(t.avgSentiment),
+      safeNum(t.tone),
+    ];
+    rows.push(cells.join(','));
+  });
+  return rows.join('\n') + '\n';
+}
+
+module.exports.formatThreadsCsv = formatThreadsCsv;

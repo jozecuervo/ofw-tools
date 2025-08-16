@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.10.0] - 2025-08-15
+
+### Added
+- OFW threading and summaries:
+  - Subject-based thread assignment with normalization (strips Re/Fwd, brackets) and participant keying
+  - Inactivity-based splitting: start a new thread segment when gap > 30 days; `threadKey` gets `#<segment>` suffix
+  - Per-message fields: `threadId`, `threadKey`, `threadIndex`
+  - Thread statistics computed in aggregator and exposed as `threadStats` (global and per-week)
+  - Weekly Markdown now includes a per-week summary row with “Threads” and “Avg Thread”
+  - Totals Markdown includes an in-table totals row and an all-time thread summary (total threads, average length)
+  - New Thread Tree Markdown output: `<report>.threads.md` with ASCII branch listing per message
+  - New Threads CSV output: `<report>-threads.csv` (Thread ID, Key, Subject, Messages, First/Last Sent, Span Days, Participants, Words, Avg Sentiment, Tone)
+    - Timestamps formatted as local `YYYY-MM-DD HH:MM`
+    - CSV cells escaped per RFC 4180
+
+### Changed
+- Read-time units computed in hours at aggregation time
+- Weekly senders CSV renamed to `<report>-senders.csv`
+- Top2 comparison CSV renamed to `<report>-top2-comparison.csv`
+
+### Tests
+- Added unit tests for thread assignment, inactivity split, thread tree, and threads CSV
+
 ## [1.9.0] - 2025-08-12
 
 PR: [#17](https://github.com/jozecuervo/ofw-tools/pull/13)
