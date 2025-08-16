@@ -27,7 +27,8 @@ const { computeDerivedMetrics } = require('./utils/ofw/metrics');
 const { assignThreads } = require('./utils/ofw/threads');
 const { accumulateStats } = require('./utils/ofw/stats');
 const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown, formatThreadTreeMarkdown } = require('./utils/output/markdown');
-const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('./utils/output/csv');
+const { formatWeeklyCsv, formatWeeklyTop2Csv, formatThreadsCsv } = require('./utils/output/csv');
+const { summarizeThreads } = require('./utils/ofw/threads');
 const { writeFile, writeJson } = require('./utils');
 
 /**
@@ -195,8 +196,11 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
     const outDir = path.resolve(process.cwd(), 'output');
     const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}-senders.csv`) : null;
     const top2CsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}-top2-comparison.csv`) : null;
+    const threadsCsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}-threads.csv`) : null;
     outputCsvWith(formatWeeklyCsv, weekly, csvFilePath, 'CSV');
     outputCsvWith(formatWeeklyTop2Csv, weekly, top2CsvPath, 'Top2 CSV');
+    const threadSummaries = summarizeThreads(messages);
+    outputCsvWith(formatThreadsCsv, threadSummaries, threadsCsvPath, 'Threads CSV');
     outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns, threadStats });
 }
 

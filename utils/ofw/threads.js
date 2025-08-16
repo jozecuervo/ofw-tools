@@ -75,43 +75,142 @@ function computeThreadKey(message) {
  * @param {Array<object>} messages
  * @returns {Array<object>}
  */
-function assignThreads(messages) {
+function assignThreads(messages, options = {}) {
   if (!Array.isArray(messages)) return [];
-  const keyToId = new Map();
-  const idToMessages = new Map();
-  let nextId = 1;
+  const inactivityDays = Number.isFinite(Number(options.inactivityDays)) ? Number(options.inactivityDays) : 30;
+  const maxGapMs = Math.max(0, inactivityDays) * 24 * 60 * 60 * 1000;
 
-  // First pass: compute keys and ids
+  const keyToMessages = new Map();
   messages.forEach(msg => {
     if (!msg || typeof msg !== 'object') return;
     const key = computeThreadKey(msg);
-    let id = keyToId.get(key);
-    if (!id) {
-      id = nextId++;
-      keyToId.set(key, id);
-      idToMessages.set(id, []);
-    }
-    msg.threadKey = key;
-    msg.threadId = id;
-    idToMessages.get(id).push(msg);
+    if (!keyToMessages.has(key)) keyToMessages.set(key, []);
+    keyToMessages.get(key).push(msg);
   });
 
-  // Second pass: assign index within each thread by sentDate then stable fallback
-  idToMessages.forEach(list => {
+  let nextId = 1;
+  keyToMessages.forEach((list, key) => {
     list.sort((a, b) => {
-      const at = a && a.sentDate instanceof Date ? a.sentDate.getTime() : 0;
-      const bt = b && b.sentDate instanceof Date ? b.sentDate.getTime() : 0;
+      const at = a && a.sentDate instanceof Date ? a.sentDate.getTime() : new Date(a.sentDate || 0).getTime();
+      const bt = b && b.sentDate instanceof Date ? b.sentDate.getTime() : new Date(b.sentDate || 0).getTime();
       if (at !== bt) return at - bt;
       const abody = String(a && a.body || '');
       const bbody = String(b && b.body || '');
       return abody.localeCompare(bbody);
     });
-    list.forEach((m, idx) => { m.threadIndex = idx; });
+
+    let segmentIndex = 1;
+    let segmentStartIdx = 0;
+    let lastTime = null;
+    for (let i = 0; i < list.length; i++) {
+      const msg = list[i];
+      const t = msg && msg.sentDate instanceof Date ? msg.sentDate.getTime() : new Date(msg.sentDate || 0).getTime();
+      const gap = (lastTime != null && Number.isFinite(lastTime) && Number.isFinite(t)) ? (t - lastTime) : 0;
+      const shouldSplit = maxGapMs > 0 && gap > maxGapMs;
+      if (i === 0 || shouldSplit) {
+        // Start new segment
+        if (i > 0) {
+          segmentIndex += 1;
+        }
+        const segId = nextId++;
+        msg.threadId = segId;
+        msg.threadKey = `${key}#${segmentIndex}`;
+        msg.threadIndex = 0;
+        segmentStartIdx = i;
+      } else {
+        // Continue current segment; inherit segment id from previous
+        const prev = list[i - 1];
+        msg.threadId = prev.threadId;
+        msg.threadKey = prev.threadKey;
+        msg.threadIndex = (prev.threadIndex || 0) + 1;
+      }
+      lastTime = t;
+    }
   });
 
   return messages;
 }
 
 module.exports = { normalizeSubject, assignThreads, computeThreadKey };
+
+/**
+ * Build per-thread summaries for reporting/CSV.
+ * @param {Array<object>} messages
+ * @returns {Array<object>} summaries
+ */
+function summarizeThreads(messages) {
+  if (!Array.isArray(messages)) return [];
+  const byId = new Map();
+  function ensure(threadId) {
+    if (!byId.has(threadId)) {
+      byId.set(threadId, {
+        threadId,
+        threadKey: null,
+        subject: '',
+        messagesCount: 0,
+        firstSent: null,
+        lastSent: null,
+        totalWords: 0,
+        sentimentTotal: 0,
+        toneTotal: 0,
+        participants: new Set(),
+        subjectCounts: new Map(),
+      });
+    }
+    return byId.get(threadId);
+  }
+
+  messages.forEach(m => {
+    if (!m || m._nonMessage) return;
+    const id = (m.threadId != null) ? m.threadId : (m.threadKey || 'unknown');
+    const t = ensure(id);
+    if (!t.threadKey && m.threadKey) t.threadKey = m.threadKey;
+    const sd = m.sentDate instanceof Date ? m.sentDate : new Date(m.sentDate);
+    if (!t.firstSent || sd < t.firstSent) t.firstSent = sd;
+    if (!t.lastSent || sd > t.lastSent) t.lastSent = sd;
+    t.messagesCount += 1;
+    t.totalWords += Number(m.wordCount) || 0;
+    t.sentimentTotal += Number(m.sentiment) || 0;
+    t.toneTotal += Number(m.tone) || 0;
+    if (m.sender) t.participants.add(String(m.sender).trim());
+    if (m.recipientReadTimes && typeof m.recipientReadTimes === 'object') {
+      Object.keys(m.recipientReadTimes).forEach(name => name && t.participants.add(String(name).trim()));
+    }
+    const subj = String(m.subject || '').trim();
+    if (subj) t.subjectCounts.set(subj, (t.subjectCounts.get(subj) || 0) + 1);
+  });
+
+  function pickSubject(map) {
+    let best = '';
+    let bestCount = -1;
+    for (const [k, v] of map.entries()) {
+      if (v > bestCount) { best = k; bestCount = v; }
+    }
+    return best || 'No subject';
+  }
+
+  const out = Array.from(byId.values()).map(t => {
+    const spanMs = (t.firstSent && t.lastSent) ? (t.lastSent - t.firstSent) : 0;
+    const spanDays = spanMs > 0 ? (spanMs / (1000 * 60 * 60 * 24)) : 0;
+    return {
+      threadId: t.threadId,
+      threadKey: t.threadKey,
+      subject: pickSubject(t.subjectCounts),
+      messages: t.messagesCount,
+      firstSentISO: t.firstSent ? t.firstSent.toISOString() : '',
+      lastSentISO: t.lastSent ? t.lastSent.toISOString() : '',
+      spanDays: Number(spanDays.toFixed(2)),
+      participants: Array.from(t.participants).sort((a, b) => a.localeCompare(b)),
+      totalWords: t.totalWords,
+      avgSentiment: t.messagesCount ? Number((t.sentimentTotal / t.messagesCount).toFixed(2)) : 0,
+      tone: t.messagesCount ? Number((t.toneTotal / t.messagesCount).toFixed(2)) : 0,
+    };
+  });
+
+  out.sort((a, b) => (new Date(a.firstSentISO)) - (new Date(b.firstSentISO)));
+  return out;
+}
+
+module.exports.summarizeThreads = summarizeThreads;
 
 
