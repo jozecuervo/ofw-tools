@@ -32,7 +32,7 @@ function formatMessageMarkdown(message, index, total) {
     `- From: **${sender}** ${formatDate(sentDate)}`,
     `- To:`,
     toLines,
-    `- Message **${index + 1}** of **${total}**`,
+    `- Message ${index + 1} of ${total}`,
     `- Word Count: **${wordCount}**, Sentiment: **${sentiment}**, Natural: **${sentiment_natural}**, Tone: **${tone}**`,
     '',
     body || '',

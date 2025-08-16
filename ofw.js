@@ -24,6 +24,7 @@ const path = require('path');
 const { parsePdf } = require('./utils');
 const { processMessages } = require('./utils/ofw/parser');
 const { computeDerivedMetrics } = require('./utils/ofw/metrics');
+const { assignThreads } = require('./utils/ofw/threads');
 const { accumulateStats } = require('./utils/ofw/stats');
 const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('./utils/output/markdown');
 const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('./utils/output/csv');
@@ -84,6 +85,7 @@ async function parsePdfFile(inputFilePath) {
         console.log('PDF text parsed');
         const parsed = processMessages(pdfText);
         console.log(`Processed ${parsed.length} messages`);
+        assignThreads(parsed);
         const messages = computeDerivedMetrics(parsed);
         console.log('Computed derived metrics');
         const directory = path.dirname(inputFilePath);
@@ -146,6 +148,21 @@ function writeMarkDownFile(data) {
  * @param {Record<string, Record<string, any>>} stats - Per-week per-person stats
  */
 function outputMarkdownSummary(totals, stats, options = {}) {
+    if (options && options.threadStats) {
+        const ts = options.threadStats;
+        if (ts && ts.totals) {
+            const avg = Number(ts.totals.averageThreadLength);
+            console.log(`Threads: ${ts.totals.totalThreads} (avg length: ${Number.isFinite(avg) ? avg.toFixed(2) : '0.00'})`);
+        }
+        if (ts && ts.weekly && typeof ts.weekly === 'object') {
+            console.log('Weekly thread summary:');
+            Object.keys(ts.weekly).forEach(week => {
+                const w = ts.weekly[week] || {};
+                const avgW = Number(w.averageThreadLength);
+                console.log(`- ${week}: ${w.totalThreads} threads, avg length ${Number.isFinite(avgW) ? avgW.toFixed(2) : '0.00'}`);
+            });
+        }
+    }
     console.log(formatTotalsMarkdown(totals, options));
     console.log(formatWeeklyMarkdown(stats, options));
 }
@@ -184,13 +201,13 @@ function outputCsvWith(formatter, data, filePath, label = 'CSV') {
  * @param {{ writeCsv?: boolean }} options
  */
 function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, options = { writeCsv: true, excludePatterns: [] }) {
-    const { totals, weekly } = accumulateStats(messages);
+    const { totals, weekly, threadStats } = accumulateStats(messages);
     const outDir = path.resolve(process.cwd(), 'output');
     const csvFilePath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.csv`) : null;
     const top2CsvPath = options.writeCsv && fileNameWithoutExt ? path.join(outDir, `${fileNameWithoutExt}.top2.csv`) : null;
     outputCsvWith(formatWeeklyCsv, weekly, csvFilePath, 'CSV');
     outputCsvWith(formatWeeklyTop2Csv, weekly, top2CsvPath, 'Top2 CSV');
-    outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns });
+    outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns, threadStats });
 }
 
 

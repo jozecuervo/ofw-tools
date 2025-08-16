@@ -36,10 +36,11 @@ function formatWeeklyTop2Csv(stats) {
     const a = w[nameA] || {};
     const b = w[nameB] || {};
     const { startISO } = parseWeekLabelToStartEnd(week);
+    const weekLabel = startISO || week; // Fallback to original label if not parseable
     const toneA = (w[nameA] && Number.isFinite(Number(w[nameA].tone))) ? w[nameA].tone : 0;
     const toneB = (w[nameB] && Number.isFinite(Number(w[nameB].tone))) ? w[nameB].tone : 0;
     const row = [
-      startISO,
+      weekLabel,
       safeInt(a.messagesSent),
       safeInt(b.messagesSent),
       safeInt(a.totalWords),
