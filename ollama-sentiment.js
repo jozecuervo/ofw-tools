@@ -32,6 +32,74 @@ function extractJsonFromText(text) {
 	return null;
 }
 
+function isShortMessage(body) {
+	const wc = String(body || '').trim().split(/\s+/).filter(Boolean).length;
+	return wc <= 3;
+}
+
+function toSentimentCategory(value) {
+	const v = typeof value === 'string' ? value.trim().toLowerCase() : value;
+	if (v === 'positive' || v === 'neutral' || v === 'negative' || v === 'mixed') return v;
+	const n = Number(v);
+	if (!Number.isNaN(n)) {
+		if (n > 0.2) return 'positive';
+		if (n < -0.2) return 'negative';
+		return 'neutral';
+	}
+	return 'unknown';
+}
+
+function toLevelCategory(value) {
+	const v = typeof value === 'string' ? value.trim().toLowerCase() : value;
+	if (v === 'low' || v === 'medium' || v === 'high') return v;
+	const n = Number(v);
+	if (!Number.isNaN(n)) {
+		if (n <= 3) return 'low';
+		if (n <= 6) return 'medium';
+		return 'high';
+	}
+	return 'unknown';
+}
+
+const ALLOWED_FLAGS = new Set([
+	'insult','threat','gaslighting','darvo','blame-shift','minimization','legal-threat','coercion','manipulation','profanity','boundary-violation','inconsistency','false-allegation','exaggerated-absolutes'
+]);
+
+function normalizeOllamaOutput(parsed, raw, message, contextMessages) {
+	const short = isShortMessage(message && message.body);
+	const base = parsed && typeof parsed === 'object' ? parsed : {};
+	const flagsIn = Array.isArray(base.flags) ? base.flags.filter(f => typeof f === 'string') : [];
+	let flags = flagsIn.filter(f => ALLOWED_FLAGS.has(f));
+	let sentiment = toSentimentCategory(base.sentiment);
+	let conflict_level = toLevelCategory(base.conflict_level);
+	let deception_risk = toLevelCategory(base.deception_risk);
+	let reason = typeof base.reason === 'string' ? base.reason.trim() : '';
+
+	if (short) {
+		const hasStrongContext = (contextMessages || []).slice(-3).some(cm => /\b(threat|lawsuit|custody|idiot|stupid|never|always)\b/i.test(String(cm && cm.body)) || /!{2,}/.test(String(cm && cm.body)));
+		if (!hasStrongContext) {
+			sentiment = (sentiment === 'negative' || sentiment === 'positive') ? sentiment : 'neutral';
+			conflict_level = 'low';
+			deception_risk = 'low';
+			if (flags.length === 0) flags = [];
+			if (!reason) reason = 'Short reply; insufficient content to infer conflict without context.';
+		}
+	}
+
+	if (sentiment === 'unknown') sentiment = 'neutral';
+	if (conflict_level === 'unknown') conflict_level = 'low';
+	if (deception_risk === 'unknown') deception_risk = 'low';
+
+	return {
+		sentiment,
+		conflict_level,
+		deception_risk,
+		flags,
+		reason: reason || '',
+		...(parsed && typeof parsed === 'object' ? {} : { raw })
+	};
+}
+
 class MessageProcessor {
 	constructor(modelName = 'llama3.1', contextLimit = 3) {
 		this.modelName = modelName;
@@ -60,15 +128,36 @@ Consider indicators: aggression, contempt, threats, legal intimidation, shifting
 Few-shot example:
 Prior: "I'll pick up the kids at 5 PM as agreed."
 Current: "You never show up on time, you're always late and ruining their lives."
-Output: {"sentiment":"-.9","conflict_level":"9","deception_risk":"5","flags":["blame-shift","exaggerated-absolutes"],"reason":"Message shifts blame with exaggerated claim of 'always late' despite prior agreement."}
+Output: {"sentiment":"negative","conflict_level":"high","deception_risk":"medium","flags":["blame-shift","exaggerated-absolutes"],"reason":"Message shifts blame with exaggerated claim of 'always late' despite prior agreement."}
 `;
 		try {
 			// Limit context to avoid overwhelming the model
 			const context = contextMessages
 				.slice(-this.contextLimit)
-				.map(msg => `Previous message: ${msg.body}`)
+				.map(msg => {
+					const s = {
+						sentiment: typeof msg.sentiment === 'number' ? msg.sentiment : null,
+						sentiment_natural: typeof msg.sentiment_natural === 'number' ? msg.sentiment_natural : null,
+						tone: typeof msg.tone === 'number' ? msg.tone : null,
+						sentiment_per_word: typeof msg.sentiment_per_word === 'number' ? msg.sentiment_per_word : null,
+						natural_per_word: typeof msg.natural_per_word === 'number' ? msg.natural_per_word : null,
+					};
+					return [
+						'Previous message:',
+						`- Sender: ${msg.sender || 'Unknown'}`,
+						`- Baseline sentiment (heuristics): sentiment=${s.sentiment}, natural=${s.sentiment_natural}, tone=${s.tone}, spw=${s.sentiment_per_word}, npw=${s.natural_per_word}`,
+						`- Body: ${msg.body}`,
+					].join('\n');
+				})
 				.join('\n');
-			const fullPrompt = `${prompt}\n\nContext:\n${context ? context + '\n' : ''}Current message: ${message.body}`;
+			const cur = {
+				sentiment: typeof message.sentiment === 'number' ? message.sentiment : null,
+				sentiment_natural: typeof message.sentiment_natural === 'number' ? message.sentiment_natural : null,
+				tone: typeof message.tone === 'number' ? message.tone : null,
+				sentiment_per_word: typeof message.sentiment_per_word === 'number' ? message.sentiment_per_word : null,
+				natural_per_word: typeof message.natural_per_word === 'number' ? message.natural_per_word : null,
+			};
+			const fullPrompt = `${prompt}\n\nContext:\n${context ? context + '\n\n' : ''}Current message:\n- Sender: ${message.sender || 'Unknown'}\n- Baseline sentiment (heuristics): sentiment=${cur.sentiment}, natural=${cur.sentiment_natural}, tone=${cur.tone}, spw=${cur.sentiment_per_word}, npw=${cur.natural_per_word}\n- Body: ${message.body}`;
 
 			const response = await ollama.chat({
 				model: this.modelName,
@@ -138,23 +227,15 @@ Output: {"sentiment":"-.9","conflict_level":"9","deception_risk":"5","flags":["b
 					const key = `${threadId}_${message.threadIndex}`;
 					if (result) {
 						parsed = extractJsonFromText(result);
-						sentimentLabel = parsed && typeof parsed.sentiment === 'string'
-							? parsed.sentiment
-							: (String(result).toLowerCase().match(/positive|negative|neutral/) || [null])[0] || 'unknown';
+						const normalized = normalizeOllamaOutput(parsed, result, message, threadContexts[threadId]);
+						sentimentLabel = normalized.sentiment;
 						this.results[key] = {
 							status: 'success',
 							sentiment: sentimentLabel,
 							threadId,
 							threadIndex: message.threadIndex,
 						};
-						const stored = parsed || {
-							sentiment: sentimentLabel,
-							conflict_level: 'unknown',
-							deception_risk: 'unknown',
-							flags: [],
-							reason: '',
-							...(parsed ? {} : { raw: result })
-						};
+						const stored = normalized;
 						this.threadSummaries[threadId].messages.push({
 							sender: message.sender,
 							sentDate: message.sentDate,
@@ -183,14 +264,7 @@ Output: {"sentiment":"-.9","conflict_level":"9","deception_risk":"5","flags":["b
 						logger.error(`Failed to process message threadId:${threadId}, index:${message.threadIndex}`);
 					}
 
-					const stored = parsed || {
-						sentiment: sentimentLabel,
-						conflict_level: 'unknown',
-						deception_risk: 'unknown',
-						flags: [],
-						reason: '',
-						...(parsed ? {} : { raw: result })
-					};
+					const stored = normalizeOllamaOutput(parsed, result, message, threadContexts[threadId]);
 					this.updatedMessages.push({ ...message, sentiment_ollama: stored });
 					threadContexts[threadId].push(message);
 					processed += 1;
