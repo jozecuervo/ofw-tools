@@ -69,12 +69,20 @@ function formatTotalsMarkdown(totals, options = {}) {
     const row = `| ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedTotalTime} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} |`;
     out.push(row);
   }
+  // Totals row inside the table for Messages and Words
+  out.push(separator);
+  const nameBlank = ''.padEnd(16);
+  const sentTotal = String(totalMessages).padStart(5);
+  const wordsTotal = String(totalWords).padStart(6);
+  const totalTimeBlank = ''.padStart(10);
+  const avgTimeBlank = ''.padStart(14);
+  const avgSentBlank = ''.padStart(14);
+  const avgNatBlank = ''.padStart(14);
+  const totalsRow = `| ${nameBlank} |${sentTotal} |${wordsTotal} |${totalTimeBlank} |${avgTimeBlank} | ${avgSentBlank} | ${avgNatBlank} |`;
+  out.push(totalsRow);
   out.push(separator);
   if (ts) {
-    out.push(`All-time totals — Messages: ${totalMessages}, Threads: ${ts.totalThreads}, Avg Thread Length: ${Number(ts.averageThreadLength).toFixed(2)}, Words: ${totalWords}`);
-    out.push('');
-  } else {
-    out.push(`All-time totals — Messages: ${totalMessages}, Words: ${totalWords}`);
+    out.push(`All-time totals —  Threads: ${ts.totalThreads}, Avg Thread Length: ${Number(ts.averageThreadLength).toFixed(2)}`);
     out.push('');
   }
   out.push('\n');
@@ -102,7 +110,7 @@ function formatWeeklyMarkdown(stats, options = {}) {
       const paddedSentiment = personStats.avgSentiment.toFixed(2).toString().padStart(14);
       const naturalAvg = (personStats.avgSentimentNatural !== undefined) ? personStats.avgSentimentNatural : personStats.sentiment_natural;
       const paddedSentiment_natural = Number(naturalAvg).toFixed(2).toString().padStart(14);
-      const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} |`;
+      const row = `| ${paddedWeek} | ${paddedName} |${paddedSent} |${wordCountDisplay} |${paddedAvgTime} | ${paddedSentiment} | ${paddedSentiment_natural} | ${''.padStart(7)} | ${''.padStart(10)} |`;
       out.push(row);
       previousWeek = week;
     }

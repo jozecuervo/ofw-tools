@@ -148,8 +148,8 @@ function writeMarkDownFile(data) {
  * @param {Record<string, Record<string, any>>} stats - Per-week per-person stats
  */
 function outputMarkdownSummary(totals, stats, options = {}) {
-    console.log(formatWeeklyMarkdown(stats, options));
     console.log(formatTotalsMarkdown(totals, options));
+    console.log(formatWeeklyMarkdown(stats, options));
 }
 
 
