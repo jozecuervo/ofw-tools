@@ -244,6 +244,11 @@ Output: {"sentiment":"negative","conflict_level":"high","deception_risk":"medium
 							conflict_level: stored.conflict_level,
 							deception_risk: stored.deception_risk,
 							flags: stored.flags,
+							baseline_sentiment: typeof message.sentiment === 'number' ? message.sentiment : null,
+							baseline_sentiment_natural: typeof message.sentiment_natural === 'number' ? message.sentiment_natural : null,
+							baseline_tone: typeof message.tone === 'number' ? message.tone : null,
+							baseline_spw: typeof message.sentiment_per_word === 'number' ? message.sentiment_per_word : null,
+							baseline_npw: typeof message.natural_per_word === 'number' ? message.natural_per_word : null,
 							threadIndex: message.threadIndex,
 						});
 						logger.info(`Processed message threadId:${threadId}, index:${message.threadIndex}`);
@@ -265,7 +270,15 @@ Output: {"sentiment":"negative","conflict_level":"high","deception_risk":"medium
 					}
 
 					const stored = normalizeOllamaOutput(parsed, result, message, threadContexts[threadId]);
-					this.updatedMessages.push({ ...message, sentiment_ollama: stored });
+					this.updatedMessages.push({
+						...message,
+						sentiment_ollama: stored,
+						baseline_sentiment: typeof message.sentiment === 'number' ? message.sentiment : null,
+						baseline_sentiment_natural: typeof message.sentiment_natural === 'number' ? message.sentiment_natural : null,
+						baseline_tone: typeof message.tone === 'number' ? message.tone : null,
+						baseline_spw: typeof message.sentiment_per_word === 'number' ? message.sentiment_per_word : null,
+						baseline_npw: typeof message.natural_per_word === 'number' ? message.natural_per_word : null,
+					});
 					threadContexts[threadId].push(message);
 					processed += 1;
 				} catch (error) {
