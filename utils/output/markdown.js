@@ -82,7 +82,13 @@ function formatTotalsMarkdown(totals, options = {}) {
   out.push(totalsRow);
   out.push(separator);
   if (ts) {
-    out.push(`All-time totals —  Threads: ${ts.totalThreads}, Avg Thread Length: ${Number(ts.averageThreadLength).toFixed(2)}`);
+    const parts = [
+      `Threads: ${ts.totalThreads}`,
+      `Avg Messages / Thread: ${Number(ts.averageThreadLength).toFixed(2)}`,
+    ];
+    if (typeof ts.avgDaysPerThread === 'number') parts.push(`Avg days per thread: ${Number(ts.avgDaysPerThread).toFixed(2)}`);
+    if (typeof ts.avgWordsPerThread === 'number') parts.push(`Avg words per thread: ${Number(ts.avgWordsPerThread).toFixed(0)}`);
+    out.push(`All-time totals —  ${parts.join(', ')}`);
     out.push('');
   }
   out.push('\n');

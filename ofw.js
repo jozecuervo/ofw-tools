@@ -201,7 +201,21 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
     outputCsvWith(formatWeeklyTop2Csv, weekly, top2CsvPath, 'Top2 CSV');
     const threadSummaries = summarizeThreads(messages);
     outputCsvWith(formatThreadsCsv, threadSummaries, threadsCsvPath, 'Threads CSV');
-    outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns, threadStats });
+    // Augment threadStats with richer averages from summaries
+    const nThreads = threadSummaries.length || 0;
+    const sumMsgs = threadSummaries.reduce((a, t) => a + (Number(t.messages) || 0), 0);
+    const sumDays = threadSummaries.reduce((a, t) => a + (Number(t.spanDays) || 0), 0);
+    const sumWords = threadSummaries.reduce((a, t) => a + (Number(t.totalWords) || 0), 0);
+    const enrichedThreadStats = {
+      ...threadStats,
+      totals: {
+        ...(threadStats && threadStats.totals ? threadStats.totals : {}),
+        avgMessagesPerThread: nThreads ? Number((sumMsgs / nThreads).toFixed(2)) : 0,
+        avgDaysPerThread: nThreads ? Number((sumDays / nThreads).toFixed(2)) : 0,
+        avgWordsPerThread: nThreads ? Number((sumWords / nThreads).toFixed(2)) : 0,
+      },
+    };
+    outputMarkdownSummary(totals, weekly, { excludePatterns: options.excludePatterns, threadStats: enrichedThreadStats });
 }
 
 
