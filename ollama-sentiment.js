@@ -49,9 +49,9 @@ Analyze the CURRENT message using the prior messages as context. Detect high-con
 Return ONLY compact JSON with keys: sentiment, conflict_level, deception_risk, flags, reason. Do not add extra text or explanations outside the JSON.
 
 Definitions:
-- sentiment: "positive" | "neutral" | "negative" | "mixed"
-- conflict_level: "low" | "medium" | "high"
-- deception_risk: "low" | "medium" | "high"
+- sentiment: "-1 to 1"
+- conflict_level: "0 - 10"
+- deception_risk: "0 - 10"
 - flags: zero or more of ["insult","threat","gaslighting" (denying reality to confuse),"darvo" (deny, attack, reverse victim/offender),"blame-shift","minimization","legal-threat","coercion","manipulation","profanity","boundary-violation","inconsistency" (mismatches with prior messages),"false-allegation"]
 - reason: one short sentence citing the behavior (quote or paraphrase)
 
@@ -60,7 +60,7 @@ Consider indicators: aggression, contempt, threats, legal intimidation, shifting
 Few-shot example:
 Prior: "I'll pick up the kids at 5 PM as agreed."
 Current: "You never show up on time, you're always late and ruining their lives."
-Output: {"sentiment":"negative","conflict_level":"high","deception_risk":"medium","flags":["blame-shift","exaggerated-absolutes"],"reason":"Message shifts blame with exaggerated claim of 'always late' despite prior agreement."}
+Output: {"sentiment":"-.9","conflict_level":"9","deception_risk":"5","flags":["blame-shift","exaggerated-absolutes"],"reason":"Message shifts blame with exaggerated claim of 'always late' despite prior agreement."}
 `;
 		try {
 			// Limit context to avoid overwhelming the model

@@ -27,6 +27,15 @@ function parseMessage(messageBlock) {
       .trim();
   }
   const lines = messageBlock.split('\n').map(normalize);
+  const reportHeaderLineRegex = /^(Generated:|Timezone:|Format:|Parents:|Child(?:ren)?:|Third Parties:|Date Range:|Contains:|Order:)/i;
+  const reportFooterMatchers = [
+    /OurFamilyWizard/i,
+    /ourfamilywizard\.com/i,
+    /info@ourfamilywizard\.com/i,
+    /^\(\d{3}\)\s*\d{3}-\d{4}$/,
+    /^Message Report$/i,
+    /^Thank you\s*$/i,
+  ];
   const metaRegex = /^(Sent|From|To|Subject)\s*:\s*(.*)$/i;
 
   let subjectIdx = -1, toIdx = -1, fromIdx = -1, sentIdx = -1;
@@ -87,7 +96,8 @@ function parseMessage(messageBlock) {
 
   let bodyStart = 0;
   let bodyEnd = lines.length;
-  const looksLikeHeadMeta = firstMetaIdx !== -1 && firstMetaIdx < 10; // metadata block at top
+  const hasReportHeaderPrefix = firstMetaIdx !== -1 && lines.slice(0, Math.max(0, firstMetaIdx)).some(l => reportHeaderLineRegex.test(l));
+  const looksLikeHeadMeta = firstMetaIdx !== -1 && (firstMetaIdx < 30 || hasReportHeaderPrefix); // metadata block at top (allow report header prefix)
   if (looksLikeHeadMeta && subjectIdx !== -1) {
     const subjValIdx = nextNonEmptyIndex(subjectIdx);
     bodyStart = (subjValIdx < lines.length && !metaRegex.test(lines[subjValIdx])) ? subjValIdx + 1 : subjectIdx + 1;
@@ -102,6 +112,8 @@ function parseMessage(messageBlock) {
       if (metaRegex.test(l)) return false;
       if (/Page\s+\d+\s+of\s+\d+/i.test(l)) return false;
       if (/^\s*\|\s*Message ReportPage/i.test(l)) return false;
+      if (reportHeaderLineRegex.test(l)) return false; // drop OFW report header lines
+      if (reportFooterMatchers.some(r => r.test(l))) return false; // drop OFW footers/branding
       return true;
     });
   message.body = bodyLines.join('\n').trim();
