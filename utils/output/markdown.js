@@ -50,8 +50,8 @@ function formatTotalsMarkdown(totals, options = {}) {
   const totalWords = entries.reduce((acc, [, t]) => acc + (t && t.totalWords ? t.totalWords : 0), 0);
   const ts = options && options.threadStats && options.threadStats.totals ? options.threadStats.totals : null;
   
-  let header = '| Name             | Sent | Words | View Time | Avg View Time | Avg. Sentiment | Sentiment ntrl |';
-  let separator = '|------------------|------|-------|-----------|---------------|----------------|----------------|';
+  let header = '| Name             | Sent | Words | View Time (hrs) | Avg View Time (hrs) | Avg. Sentiment | Sentiment ntrl |';
+  let separator = '|------------------|------|-------|-----------------|---------------------|----------------|----------------|';
   out.push('\n');
   out.push(separator);
   out.push(header);
@@ -60,8 +60,8 @@ function formatTotalsMarkdown(totals, options = {}) {
     if (shouldHide(person)) continue;
     const paddedName = person.padEnd(16);
     const paddedSent = personTotals.messagesSent.toString().padStart(5);
-    const paddedTotalTime = (personTotals.totalReadTime).toFixed(1).toString().padStart(10);
-    const paddedAvgTime = (personTotals.averageReadTime).toFixed(1).toString().padStart(14);
+    const paddedTotalTime = (personTotals.totalReadTime).toFixed(1).toString().padStart(16);
+    const paddedAvgTime = (personTotals.averageReadTime).toFixed(1).toString().padStart(20);
     const wordCountDisplay = personTotals.messagesSent > 0 ? personTotals.totalWords.toString().padStart(6) : ' '.padStart(6);
     const paddedSentiment = personTotals.avgSentiment.toFixed(2).toString().padStart(14);
     const naturalAvg = (personTotals.avgSentimentNatural !== undefined) ? personTotals.avgSentimentNatural : personTotals.sentiment_natural;
@@ -74,8 +74,8 @@ function formatTotalsMarkdown(totals, options = {}) {
   const nameBlank = ''.padEnd(16);
   const sentTotal = String(totalMessages).padStart(5);
   const wordsTotal = String(totalWords).padStart(6);
-  const totalTimeBlank = ''.padStart(10);
-  const avgTimeBlank = ''.padStart(14);
+  const totalTimeBlank = ''.padStart(16);
+  const avgTimeBlank = ''.padStart(20);
   const avgSentBlank = ''.padStart(14);
   const avgNatBlank = ''.padStart(14);
   const totalsRow = `| ${nameBlank} |${sentTotal} |${wordsTotal} |${totalTimeBlank} |${avgTimeBlank} | ${avgSentBlank} | ${avgNatBlank} |`;

@@ -77,7 +77,8 @@ function accumulateStats(messages) {
     for (const [recipient, firstViewed] of Object.entries(message.recipientReadTimes)) {
       if (firstViewed !== 'Never') {
         const firstViewedDate = new Date(firstViewed);
-        const readTime = (firstViewedDate - message.sentDate) / 60000;
+        // Convert to hours at accumulation time (was minutes previously)
+        const readTime = (firstViewedDate - message.sentDate) / 3600000;
 
         if (!totals[recipient]) {
           totals[recipient] = {
