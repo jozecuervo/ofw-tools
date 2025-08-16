@@ -1,4 +1,4 @@
-const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('../utils/output/markdown');
+const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown, formatThreadTreeMarkdown } = require('../utils/output/markdown');
 const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('../utils/output/csv');
 const { computeTone } = require('../utils/ofw/stats');
 
@@ -17,6 +17,18 @@ describe('utils/output', () => {
     expect(str).toMatch(/Message 1 of 1/);
     expect(str).toMatch(/Hello/);
     expect(str).toMatch(/World/);
+  });
+
+  test('formatThreadTreeMarkdown groups by thread and lists messages', () => {
+    const msgs = [
+      { threadId: 1, subject: 'Hello', sender: 'A', recipientReadTimes: {}, sentDate: new Date('2025-01-01T00:00:00'), body: 'First' },
+      { threadId: 1, subject: 'Re: Hello', sender: 'B', recipientReadTimes: {}, sentDate: new Date('2025-01-01T01:00:00'), body: 'Second' },
+      { threadId: 2, subject: 'Other', sender: 'C', recipientReadTimes: {}, sentDate: new Date('2025-01-02T00:00:00'), body: 'Third' },
+    ];
+    const md = formatThreadTreeMarkdown(msgs);
+    expect(md).toMatch(/# Threads/);
+    expect(md).toMatch(/Thread 1: Hello \(2\)/);
+    expect(md).toMatch(/Thread 2: Other \(1\)/);
   });
 
   test('formatWeeklyCsv outputs header and rows', () => {

@@ -26,7 +26,7 @@ const { processMessages } = require('./utils/ofw/parser');
 const { computeDerivedMetrics } = require('./utils/ofw/metrics');
 const { assignThreads } = require('./utils/ofw/threads');
 const { accumulateStats } = require('./utils/ofw/stats');
-const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown } = require('./utils/output/markdown');
+const { formatMessageMarkdown, formatTotalsMarkdown, formatWeeklyMarkdown, formatThreadTreeMarkdown } = require('./utils/output/markdown');
 const { formatWeeklyCsv, formatWeeklyTop2Csv } = require('./utils/output/csv');
 const { writeFile, writeJson } = require('./utils');
 
@@ -135,6 +135,11 @@ function writeMarkDownFile(data) {
             const markdownFilePath = path.join(outDir, `${fileNameWithoutExt}.md`);
             console.log(`Writing all messages to ${markdownFilePath}`);
             writeFile(markdownFilePath, markdownContent);
+            // Also write thread tree view
+            const threadMd = formatThreadTreeMarkdown(messages);
+            const threadFilePath = path.join(outDir, `${fileNameWithoutExt}.threads.md`);
+            console.log(`Writing thread tree to ${threadFilePath}`);
+            writeFile(threadFilePath, threadMd);
             resolve(data);  // Pass the data object along for further processing
         } catch (error) {
             reject(`Failed to write Markdown file: ${error}`);
@@ -149,6 +154,8 @@ function writeMarkDownFile(data) {
  */
 function outputMarkdownSummary(totals, stats, options = {}) {
     console.log(formatWeeklyMarkdown(stats, options));
+    // output threaded message tree to console
+    // console.log(formatThreadStatsMarkdown(totals, options));
     console.log(formatTotalsMarkdown(totals, options));
 }
 
