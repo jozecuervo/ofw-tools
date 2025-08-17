@@ -15,11 +15,12 @@
  * 5) compileAndOutputStats: compute per-week/person stats; write CSV (optional); print Markdown tables
  *
  * CLI
- * - node ofw.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--ollama] [--ollama-max <n>] [--exclude <csv>]
+ * - node ofw.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--ollama] [--ollama-max <n>] [--ollama-numeric] [--exclude <csv>]
  *   --no-markdown: skip writing per-message Markdown file
  *   --no-csv: skip writing weekly CSV summary
  *   --ollama: run Ollama-based LLM sentiment post-processing on the generated JSON
  *   --ollama-max <n>: limit Ollama-processed messages (default 6)
+ *   --ollama-numeric: preserve numeric scores in sentiment output (adds *_num fields)
  */
 const path = require('path');
 
@@ -222,7 +223,7 @@ function compileAndOutputStats({ messages, directory, fileNameWithoutExt }, opti
 
 
 function printHelp() {
-    console.log(`\nUsage: node ofw.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--ollama] [--ollama-max <n>] [--exclude <csv>]\n\nOptions:\n  --no-markdown           Skip writing the per-message Markdown file\n  --no-csv                Skip writing the weekly CSV summary\n  --ollama                Run Ollama-based sentiment analysis on the generated JSON (requires local Ollama)\n  --ollama-max <n>        Limit how many messages are sent to Ollama (default: 6)\n  --exclude <csv>         Comma-separated substrings to hide in printed tables (case-insensitive)\n  -h, --help              Show this help\n`);
+    console.log(`\nUsage: node ofw.js <path-to-ofw-pdf> [--no-markdown] [--no-csv] [--ollama] [--ollama-max <n>] [--ollama-numeric] [--exclude <csv>]\n\nOptions:\n  --no-markdown           Skip writing the per-message Markdown file\n  --no-csv                Skip writing the weekly CSV summary\n  --ollama                Run Ollama-based sentiment analysis on the generated JSON (requires local Ollama)\n  --ollama-max <n>        Limit how many messages are sent to Ollama (default: 6)\n  --ollama-numeric        Preserve numeric scores in sentiment output (adds *_num fields)\n  --exclude <csv>         Comma-separated substrings to hide in printed tables (case-insensitive)\n  -h, --help              Show this help\n`);
 }
 
 function runCli(rawArgs) {
@@ -248,6 +249,7 @@ function runCli(rawArgs) {
         excludePatterns: [],
     };
     const enableOllama = rawArgs.includes('--ollama');
+    const preserveNumeric = rawArgs.includes('--ollama-numeric');
     // Parse --ollama-max <n> or --ollama-max=<n>
     let ollamaMax = 6;
     const maxIdx = rawArgs.indexOf('--ollama-max');
@@ -280,13 +282,21 @@ function runCli(rawArgs) {
         .then(async data => {
             if (enableOllama) {
                 try {
+                    // Verify Ollama availability early
+                    try {
+                        const { default: ollama } = require('ollama');
+                        await ollama.chat({ model: 'llama3.1', messages: [{ role: 'user', content: 'ping' }] });
+                    } catch (e) {
+                        console.error('Ollama server not reachable. Run `ollama serve` and ensure model `llama3.1` is pulled.');
+                        throw e;
+                    }
                     const fileNameWithoutExt = data && data.fileNameWithoutExt ? data.fileNameWithoutExt : path.basename(INPUT_FILE_PATH, path.extname(INPUT_FILE_PATH));
                     const jsonPath = path.resolve(process.cwd(), 'output', `${fileNameWithoutExt}.json`);
                     const outputDir = path.resolve(process.cwd(), 'output');
                     console.log('Running Ollama sentiment analysis...');
                     const { MessageProcessor } = require('./ollama-sentiment');
-                    const processor = new MessageProcessor('llama3.1');
-                    await processor.processJsonFile(jsonPath, outputDir, { maxMessages: ollamaMax });
+                    const processor = new MessageProcessor('llama3.1', 3, { preserveNumeric });
+                    await processor.processJsonFile(jsonPath, outputDir, { maxMessages: ollamaMax, preserveNumeric });
                 } catch (e) {
                     console.error('Ollama sentiment analysis failed:', e && e.message ? e.message : e);
                 }

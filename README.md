@@ -94,10 +94,14 @@ Pass arguments after `--`.
 
   # Override cap
   node ofw.js /absolute/path/to/OFW_Messages_Report.pdf --ollama --ollama-max 24
+  # Preserve numeric scores
+  node ofw.js /absolute/path/to/OFW_Messages_Report.pdf --ollama --ollama-numeric
   ```
 - **Outputs** (written to `./output/` alongside the original JSON):
   - `<report> - LLM processed.json` — same messages with an added `sentiment_ollama` field per message
-  - `<report> - summary.md` — per-thread list of messages and detected indicators
+  - `<report> - summary.md` — per-thread list with sentiment, conflict, deception, flags, and reason
+  - `<report> - threads.llm.md` — threaded view with model outputs
+  - `<report> - sentiment.csv` — flat export of sentiment results
 - **`sentiment_ollama` schema** (compact JSON):
   ```json
   {
@@ -107,11 +111,12 @@ Pass arguments after `--`.
     "flags": [
       "insult","threat","gaslighting","darvo","blame-shift","minimization",
       "legal-threat","coercion","manipulation","profanity","boundary-violation",
-      "inconsistency","false-allegation","exaggerated-absolutes"
+      "inconsistency","false-allegation","exaggerated-absolutes","scheduling-dispute","custody-threat"
     ],
     "reason": "Short justification"
   }
   ```
+  Optional numeric preservation adds: `sentiment_num` (-1..1), `conflict_level_num` (0..10), `deception_risk_num` (0..10).
   If the model returns non-JSON, the tool attempts to extract JSON; otherwise it stores a minimal object with a `raw` field.
 - **Bias testing**: The prompt includes baseline heuristic scores (`sentiment`, `sentiment_natural`, `tone`, and per‑word variants) for the current and prior context messages. This enables observing any systematic drift/bias when the model sees these priors versus when it does not (toggle by editing `ollama-sentiment.js`).
 
