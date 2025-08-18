@@ -308,18 +308,49 @@ function printSummary() {
     }
 }
 
+function computeAttribution(input, worksheet) {
+    const cpSplit = (typeof input.cpSplit === 'number' && input.cpSplit >= 0 && input.cpSplit <= 1) ? input.cpSplit : 0.5;
+    const ownerName = input.ownerName || 'Owner';
+    const otherPartyName = input.otherPartyName || 'Other Spouse';
+
+    const ownerCpShare = worksheet.cpInterest * cpSplit;
+    const otherCpShare = worksheet.cpInterest * (1 - cpSplit);
+    const ownerTotal = worksheet.spInterest + ownerCpShare;
+    const otherTotal = otherCpShare;
+
+    return {
+        cpSplit,
+        ownerName,
+        otherPartyName,
+        ownerCpShare,
+        otherCpShare,
+        ownerTotal,
+        otherTotal,
+    };
+}
+
+function printAttribution() {
+    const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    const a = computeAttribution(input, worksheet);
+    console.log('Final attribution (assuming equal division of CP unless overridden by config.cpSplit):');
+    console.log(`${a.ownerName}: ${currencyFormatter.format(a.ownerTotal)} = SP (${currencyFormatter.format(worksheet.spInterest)}) + CP share (${currencyFormatter.format(a.ownerCpShare)})`);
+    console.log(`${a.otherPartyName}: ${currencyFormatter.format(a.otherTotal)} = CP share (${currencyFormatter.format(a.otherCpShare)})`);
+    console.log(`Total allocated: ${currencyFormatter.format(a.ownerTotal + a.otherTotal)} = SP (${currencyFormatter.format(worksheet.spInterest)}) + CP (${currencyFormatter.format(worksheet.cpInterest)})\n`);
+}
+
 printHeader();
 if (!summaryOnly) {
     printWorksheet();
 }
 printSummary();
+printAttribution();
 
 const outIdx = argv.indexOf('--out-json');
 if (outIdx !== -1 && argv[outIdx + 1]) {
     const outPath = argv[outIdx + 1];
     try {
         const { writeJson } = require('./utils/fs');
-        writeJson(outPath, { inputs: input, worksheet });
+        writeJson(outPath, { inputs: input, worksheet, attribution: computeAttribution(input, worksheet) });
         console.log(`\nWrote worksheet JSON to ${outPath}`);
     } catch (e) {
         console.error('Failed to write --out-json file:', e.message);
